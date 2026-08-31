@@ -6,9 +6,62 @@ import os
 import datetime
 
 st.set_page_config(page_title="ระบบเปรียบเทียบยอดค่าเทอม", layout="wide")
-st.title("📊 โปรแกรมเปรียบเทียบและอัปเดตยอดค่าเทอมอัตโนมัติ")
-
 DB_FILE = "master_database.csv"
+
+# ==========================================
+# เมนูจัดการฐานข้อมูลด้านข้าง (Sidebar)
+# ==========================================
+with st.sidebar:
+    st.header("⚙️ จัดการฐานข้อมูลตั้งต้น")
+    
+    # 1. เช็คสถานะและปุ่มลบ/ดาวน์โหลด
+    if os.path.exists(DB_FILE):
+        st.success("🟢 สถานะ: มีฐานข้อมูลในระบบ")
+        with open(DB_FILE, "rb") as f:
+            st.download_button("💾 ดาวน์โหลดฐานข้อมูลปัจจุบัน", f, file_name=f"database_backup_{datetime.datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+        
+        if st.button("🗑️ ล้างฐานข้อมูลเพื่อเริ่มใหม่"):
+            os.remove(DB_FILE)
+            st.rerun()
+    else:
+        st.warning("🔴 สถานะ: ยังไม่มีฐานข้อมูล")
+
+    st.divider()
+    
+    # 2. อัปโหลดไฟล์เพื่อเปลี่ยนฐานข้อมูลใหม่
+    st.subheader("เปลี่ยนไฟล์ฐานข้อมูลใหม่")
+    st.write("อัปโหลดไฟล์ Excel/CSV (คอลัมน์: รหัส, ชื่อ, ยอดเงิน)")
+    uploaded_db = st.file_uploader("เลือกไฟล์", type=['csv', 'xlsx'])
+    
+    if uploaded_db is not None:
+        if st.button("🔄 อัปเดตเป็นฐานข้อมูลนี้"):
+            try:
+                if uploaded_db.name.endswith('.csv'):
+                    df_upload = pd.read_csv(uploaded_db)
+                else:
+                    df_upload = pd.read_excel(uploaded_db)
+                
+                # บังคับดึงแค่ 3 คอลัมน์แรก และเปลี่ยนชื่อให้ตรงกับระบบ
+                if len(df_upload.columns) >= 3:
+                    df_upload = df_upload.iloc[:, :3]
+                    df_upload.columns = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)']
+                    # แปลงยอดเงินเป็นตัวเลข
+                    df_upload['ยอดค้างเดิม (บาท)'] = pd.to_numeric(df_upload['ยอดค้างเดิม (บาท)'], errors='coerce').fillna(0)
+                    # ตัดคนที่ยอดเป็น 0 ออก
+                    df_upload = df_upload[df_upload['ยอดค้างเดิม (บาท)'] != 0]
+                    df_upload.to_csv(DB_FILE, index=False)
+                    
+                    st.success("บันทึกฐานข้อมูลใหม่สำเร็จ!")
+                    st.rerun()
+                else:
+                    st.error("ไฟล์ต้องมีอย่างน้อย 3 คอลัมน์ (รหัสนักเรียน, ชื่อ-นามสกุล, ยอดเงิน)")
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาดในการอ่านไฟล์: {e}")
+
+# ==========================================
+# หน้าจอหลัก (Main Page)
+# ==========================================
+st.title("📊 โปรแกรมเปรียบเทียบและอัปเดตยอดค่าเทอมอัตโนมัติ")
 
 def process_csv(file):
     outstanding_data = []
@@ -27,7 +80,7 @@ def process_csv(file):
                 outstanding_data.append({
                     'รหัสนักเรียน': student_code,
                     'ชื่อ-นามสกุล': student_name,
-                    'ยอดค้างใหม่ (บาท)': float(total_str)
+                    'ยอดคงเหลือล่าสุด (บาท)': float(total_str)
                 })
             except Exception:
                 pass
@@ -35,10 +88,10 @@ def process_csv(file):
 
 if os.path.exists(DB_FILE):
     df_old = pd.read_csv(DB_FILE)
-    st.info(f"📁 ระบบตรวจพบฐานข้อมูลเดิม มีรายชื่อค้างชำระ {len(df_old)} รายการ")
+    st.info(f"📁 ระบบพร้อมใช้งาน: มีรายชื่อค้างชำระในฐานข้อมูล {len(df_old)} รายการ (คุณสามารถจัดการไฟล์นี้ได้ที่เมนูด้านซ้าย)")
 else:
     df_old = pd.DataFrame()
-    st.warning("⚠️ ยังไม่มีฐานข้อมูลในระบบ (อัปโหลดครั้งแรกเพื่อสร้างฐานข้อมูล)")
+    st.warning("⚠️ ยังไม่มีฐานข้อมูลในระบบ (การอัปโหลดไฟล์ด้านล่างนี้ครั้งแรก จะเป็นการสร้างฐานข้อมูลตั้งต้น)")
 
 new_csvs = st.file_uploader("🆕 อัปโหลดไฟล์ CSV จากโปรแกรม Express เพื่อเช็คยอดล่าสุด", type=['csv'], accept_multiple_files=True)
 
@@ -52,19 +105,17 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
             df_new = pd.DataFrame(all_data)
             
             if not df_old.empty:
-                # แก้ปัญหา Error คอลัมน์ไม่ตรง โดยบังคับตั้งชื่อใหม่ให้ถูกต้องเสมอ
                 df_old.columns = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)']
                 
                 df_merge = pd.merge(df_old, df_new, on='รหัสนักเรียน', how='outer', suffixes=('_เก่า', '_ใหม่'))
                 df_merge['ชื่อ-นามสกุล'] = df_merge['ชื่อ-นามสกุล_ใหม่'].fillna(df_merge['ชื่อ-นามสกุล_เก่า'])
                 
                 df_merge['ยอดค้างเดิม (บาท)'] = df_merge['ยอดค้างเดิม (บาท)'].fillna(0)
-                df_merge['ยอดค้างใหม่ (บาท)'] = df_merge['ยอดค้างใหม่ (บาท)'].fillna(0)
+                df_merge['ยอดคงเหลือล่าสุด (บาท)'] = df_merge['ยอดคงเหลือล่าสุด (บาท)'].fillna(0)
                 
-                # คำนวณเงินที่ชำระเข้ามา (ยอดเดิม - ยอดใหม่)
-                df_merge['ยอดที่ชำระเข้ามา (บาท)'] = (df_merge['ยอดค้างเดิม (บาท)'] - df_merge['ยอดค้างใหม่ (บาท)']).round(2)
+                df_merge['ยอดที่ชำระเข้ามา (บาท)'] = (df_merge['ยอดค้างเดิม (บาท)'] - df_merge['ยอดคงเหลือล่าสุด (บาท)']).round(2)
                 
-                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดค้างใหม่ (บาท)', 'ยอดที่ชำระเข้ามา (บาท)']
+                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดที่ชำระเข้ามา (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
                 df_merge = df_merge[cols]
                 
                 def highlight_changes(row):
@@ -75,28 +126,28 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                         idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
                         colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
                     elif paid < 0:
-                        idx_new = df_merge.columns.get_loc('ยอดค้างใหม่ (บาท)')
+                        idx_remain = df_merge.columns.get_loc('ยอดคงเหลือล่าสุด (บาท)')
                         idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
-                        colors[idx_new] = 'background-color: #f8d7da; color: #721c24;'
+                        colors[idx_remain] = 'background-color: #f8d7da; color: #721c24;'
                         colors[idx_paid] = 'background-color: #f8d7da; color: #721c24;'
                     return colors
 
                 st.write("**ผลการเปรียบเทียบความเคลื่อนไหว:**")
                 styled_df = df_merge.style.apply(highlight_changes, axis=1).format({
                     'ยอดค้างเดิม (บาท)': '{:,.2f}',
-                    'ยอดค้างใหม่ (บาท)': '{:,.2f}',
-                    'ยอดที่ชำระเข้ามา (บาท)': '{:,.2f}'
+                    'ยอดที่ชำระเข้ามา (บาท)': '{:,.2f}',
+                    'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
                 })
                 st.dataframe(styled_df, use_container_width=True)
                 
                 # บันทึกฐานข้อมูลใหม่
-                df_new_to_save = df_merge[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างใหม่ (บาท)']]
-                df_new_to_save = df_new_to_save[df_new_to_save['ยอดค้างใหม่ (บาท)'] != 0]
+                df_new_to_save = df_merge[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดคงเหลือล่าสุด (บาท)']]
+                df_new_to_save = df_new_to_save[df_new_to_save['ยอดคงเหลือล่าสุด (บาท)'] != 0]
                 df_new_to_save.to_csv(DB_FILE, index=False)
                 st.success("✅ อัปเดตฐานข้อมูลเรียบร้อยแล้ว!")
                 
                 output = io.BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     df_merge.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
                 
                 st.download_button(
@@ -108,7 +159,6 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 
             else:
                 st.write("**ข้อมูลเริ่มต้นในระบบ:**")
-                st.dataframe(df_new.style.format({'ยอดค้างใหม่ (บาท)': '{:,.2f}'}), use_container_width=True)
-                # บันทึกข้อมูลเริ่มต้น
+                st.dataframe(df_new.style.format({'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'}), use_container_width=True)
                 df_new.to_csv(DB_FILE, index=False)
                 st.success("✅ สร้างฐานข้อมูลตั้งต้นเรียบร้อยแล้ว!")
