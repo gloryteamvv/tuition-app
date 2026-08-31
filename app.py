@@ -1,3 +1,13 @@
+ผมได้ปรับเปลี่ยนชื่อคอลัมน์จาก "ยอดที่ชำระเข้ามา" ให้สั้นและตรงตามที่คุณต้องการเป็น **"ยอดที่จ่าย"** เรียบร้อยแล้วครับ
+
+**วิธีคัดลอกโค้ดที่ถูกต้องเพื่อป้องกัน Error:**
+
+1. ไปที่ไฟล์ `app.py` บน GitHub
+2. ลบโค้ดและข้อความเดิมทิ้งให้หมด (หน้าจอต้องว่างเปล่า ไม่มีตัวอักษรใดๆ เหลืออยู่)
+3. กดปุ่ม **Copy (รูปกระดาษซ้อนกัน)** ที่มุมขวาบนของกล่องโค้ดด้านล่างนี้ แล้วนำไปวาง
+4. กด Commit changes
+
+```python
 import streamlit as st
 import pandas as pd
 import csv
@@ -117,21 +127,22 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 df_merge['ยอดค้างเดิม (บาท)'] = df_merge['ยอดค้างเดิม (บาท)'].fillna(0)
                 df_merge['ยอดคงเหลือล่าสุด (บาท)'] = df_merge['ยอดคงเหลือล่าสุด (บาท)'].fillna(0)
                 
-                df_merge['ยอดที่ชำระเข้ามา (บาท)'] = (df_merge['ยอดค้างเดิม (บาท)'] - df_merge['ยอดคงเหลือล่าสุด (บาท)']).round(2)
+                # เปลี่ยนชื่อจาก ยอดที่ชำระเข้ามา เป็น ยอดที่จ่าย
+                df_merge['ยอดที่จ่าย (บาท)'] = (df_merge['ยอดค้างเดิม (บาท)'] - df_merge['ยอดคงเหลือล่าสุด (บาท)']).round(2)
                 
-                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดที่ชำระเข้ามา (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
+                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
                 df_merge = df_merge[cols]
                 
                 def highlight_changes(row):
                     colors = [''] * len(row)
-                    paid = row['ยอดที่ชำระเข้ามา (บาท)']
+                    paid = row['ยอดที่จ่าย (บาท)']
                     
                     if paid > 0:
-                        idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
+                        idx_paid = df_merge.columns.get_loc('ยอดที่จ่าย (บาท)')
                         colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
                     elif paid < 0:
                         idx_remain = df_merge.columns.get_loc('ยอดคงเหลือล่าสุด (บาท)')
-                        idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
+                        idx_paid = df_merge.columns.get_loc('ยอดที่จ่าย (บาท)')
                         colors[idx_remain] = 'background-color: #f8d7da; color: #721c24;'
                         colors[idx_paid] = 'background-color: #f8d7da; color: #721c24;'
                     return colors
@@ -139,7 +150,7 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 st.write("**ผลการเปรียบเทียบความเคลื่อนไหว:**")
                 styled_df = df_merge.style.apply(highlight_changes, axis=1).format({
                     'ยอดค้างเดิม (บาท)': '{:,.2f}',
-                    'ยอดที่ชำระเข้ามา (บาท)': '{:,.2f}',
+                    'ยอดที่จ่าย (บาท)': '{:,.2f}',
                     'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
                 })
                 st.dataframe(styled_df, use_container_width=True)
@@ -165,3 +176,5 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 st.dataframe(df_new.style.format({'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'}), use_container_width=True)
                 df_new.to_csv(DB_FILE, index=False)
                 st.success("✅ สร้างฐานข้อมูลตั้งต้นเรียบร้อยแล้ว!")
+
+```
