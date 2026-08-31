@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import csv
 import io
 import datetime
 
-st.set_page_config(page_title="ระบบสรุปยอดค่าเทอม", layout="wide")
-st.title("📊 โปรแกรมสรุปยอดค่าเทอมค้างชำระ (ดึงข้อมูลจาก Express)")
+st.set_page_config(page_title="ระบบเปรียบเทียบยอดค่าเทอม", layout="wide")
+st.title("📊 โปรแกรมเปรียบเทียบและสรุปยอดค่าเทอมค้างชำระ")
 
 def process_csv(file):
     outstanding_data = []
@@ -15,8 +13,7 @@ def process_csv(file):
     reader = csv.reader(io.StringIO(content))
     
     for row in reader:
-        if not row:
-            continue
+        if not row: continue
         non_empty = [x.strip() for x in row if x.strip()]
         
         if non_empty and non_empty[0] == "รวมลูกค้า":
@@ -27,91 +24,109 @@ def process_csv(file):
                 outstanding_data.append({
                     'รหัสนักเรียน': student_code,
                     'ชื่อ-นามสกุล': student_name,
-                    'ยอดค้างชำระ (บาท)': float(total_str),
+                    'ยอดใหม่ (บาท)': float(total_str),
                     'อ้างอิงจากไฟล์': file.name
                 })
             except Exception:
                 pass
     return outstanding_data
 
-uploaded_files = st.file_uploader(
-    "📂 ลากไฟล์ CSV จากโปรแกรม Express มาวางที่นี่ (เลือกได้หลายไฟล์พร้อมกัน)", 
-    type=['csv'], 
-    accept_multiple_files=True
-)
+# สร้างกล่องอัปโหลด 2 ฝั่ง (ซ้าย: ข้อมูลเก่า / ขวา: ข้อมูลใหม่)
+col1, col2 = st.columns(2)
+with col1:
+    st.info("📁 1. ฐานข้อมูลเดิม")
+    old_excel = st.file_uploader("อัปโหลดไฟล์ Excel สรุปยอดของรอบที่แล้ว (ถ้ามี)", type=['xlsx'])
 
-if uploaded_files:
-    if st.button("ประมวลผลข้อมูล"):
+with col2:
+    st.success("🆕 2. ข้อมูลอัปเดตล่าสุด")
+    new_csvs = st.file_uploader("อัปโหลดไฟล์ CSV จากโปรแกรม Express", type=['csv'], accept_multiple_files=True)
+
+if st.button("ประมวลผลและเปรียบเทียบยอด"):
+    df_old = pd.DataFrame()
+    df_new = pd.DataFrame()
+
+    # ดึงข้อมูลเก่า (ถ้ามีการอัปโหลด)
+    if old_excel:
+        try:
+            df_old = pd.read_excel(old_excel)
+            if 'รหัสนักเรียน' in df_old.columns and 'ยอดค้างชำระ (บาท)' in df_old.columns:
+                df_old = df_old[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างชำระ (บาท)']]
+                df_old.rename(columns={'ยอดค้างชำระ (บาท)': 'ยอดเดิม (บาท)'}, inplace=True)
+            elif 'ยอดเดิม (บาท)' in df_old.columns:
+                 df_old = df_old[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดเดิม (บาท)']]
+        except Exception as e:
+            st.error(f"อ่านไฟล์ Excel ผิดพลาด: {e}")
+
+    # ดึงข้อมูลใหม่
+    if new_csvs:
         all_data = []
-        for file in uploaded_files:
+        for file in new_csvs:
             all_data.extend(process_csv(file))
-            
         if all_data:
-            df = pd.DataFrame(all_data)
-            st.success(f"ดึงข้อมูลสำเร็จ! พบรายชื่อลูกหนี้ทั้งหมด {len(df)} รายการ")
-            st.dataframe(df, use_container_width=True)
-            
-            # สร้างไฟล์ Excel ในหน่วยความจำ
-            output = io.BytesIO()
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = "รายงานยอดค้างชำระ"
-            
-            headers = ["ลำดับ", "รหัสนักเรียน", "ชื่อ-นามสกุล", "ยอดค้างชำระ (บาท)", "อ้างอิงจากไฟล์"]
-            ws.append(headers)
-            
-            header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-            header_font = Font(color="FFFFFF", bold=True)
-            thin_border = Border(
-                left=Side(style='thin'), right=Side(style='thin'), 
-                top=Side(style='thin'), bottom=Side(style='thin')
-            )
-            
-            for cell in ws[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal='center', vertical='center')
-                cell.border = thin_border
-                
-            total_sum = 0
-            for idx, r in df.iterrows():
-                row_num = idx + 1
-                s_code = r['รหัสนักเรียน']
-                s_name = r['ชื่อ-นามสกุล']
-                s_amount = r['ยอดค้างชำระ (บาท)']
-                s_file = r['อ้างอิงจากไฟล์']
-                
-                ws.append([row_num, s_code, s_name, s_amount, s_file])
-                total_sum += s_amount
-                
-            for row in ws.iter_rows(min_row=2, max_row=len(df)+1):
-                for cell in row:
-                    cell.border = thin_border
-                row[0].alignment = Alignment(horizontal='center')
-                row[1].alignment = Alignment(horizontal='center')
-                row[3].number_format = '#,##0.00'
-                
-            total_row = len(df) + 2
-            ws.append(["", "", "รวมยอดค้างชำระทั้งหมด", total_sum, ""])
-            for cell in ws[total_row]:
-                cell.font = Font(bold=True)
-                cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
-                cell.border = thin_border
-            ws.cell(row=total_row, column=4).number_format = '#,##0.00'
-            
-            ws.column_dimensions['A'].width = 8
-            ws.column_dimensions['B'].width = 15
-            ws.column_dimensions['C'].width = 35
-            ws.column_dimensions['D'].width = 20
-            ws.column_dimensions['E'].width = 30
-            
-            wb.save(output)
-            
-            st.download_button(
-                label="📥 ดาวน์โหลดไฟล์ Excel สรุปยอด",
-                data=output.getvalue(),
-                file_name=f"รายงานสรุปยอดค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            df_new = pd.DataFrame(all_data)
         else:
-            st.error("ไม่พบข้อมูลลูกหนี้ในไฟล์ที่อัปโหลด กรุณาตรวจสอบไฟล์อีกครั้ง")
+            st.warning("ไม่พบข้อมูลลูกหนี้ในไฟล์ CSV ใหม่")
+
+    # นำมาเปรียบเทียบกัน
+    if not df_new.empty:
+        if not df_old.empty:
+            # รวมตารางด้วยรหัสนักเรียน
+            df_merge = pd.merge(df_old, df_new, on=['รหัสนักเรียน', 'ชื่อ-นามสกุล'], how='outer')
+            df_merge['ยอดเดิม (บาท)'] = df_merge['ยอดเดิม (บาท)'].fillna(0)
+            df_merge['ยอดใหม่ (บาท)'] = df_merge['ยอดใหม่ (บาท)'].fillna(0)
+            df_merge['ส่วนต่าง (ชำระแล้ว)'] = df_merge['ยอดเดิม (บาท)'] - df_merge['ยอดใหม่ (บาท)']
+            
+            # จัดเรียงคอลัมน์
+            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดเดิม (บาท)', 'ยอดใหม่ (บาท)', 'ส่วนต่าง (ชำระแล้ว)', 'อ้างอิงจากไฟล์']
+            df_merge = df_merge[[c for c in cols if c in df_merge.columns]]
+            
+            st.write(f"**สรุปผลการเปรียบเทียบ:** พบรายชื่อทั้งหมด {len(df_merge)} รายการ")
+            
+            # ฟังก์ชันไฮไลต์สี
+            def highlight_changes(row):
+                colors = [''] * len(row)
+                diff = row['ส่วนต่าง (ชำระแล้ว)']
+                
+                # ถ้าจ่ายเงินแล้ว (ยอดใหม่น้อยกว่ายอดเดิม) -> ไฮไลต์สีเขียว
+                if diff > 0:
+                    idx_new = df_merge.columns.get_loc('ยอดใหม่ (บาท)')
+                    idx_diff = df_merge.columns.get_loc('ส่วนต่าง (ชำระแล้ว)')
+                    colors[idx_new] = 'background-color: #d4edda; color: #155724;'
+                    colors[idx_diff] = 'background-color: #d4edda; color: #155724;'
+                
+                # ถ้าหนี้เพิ่ม (ยอดใหม่มากกว่ายอดเดิม) -> ไฮไลต์สีแดงอ่อน
+                elif diff < 0:
+                    idx_new = df_merge.columns.get_loc('ยอดใหม่ (บาท)')
+                    idx_diff = df_merge.columns.get_loc('ส่วนต่าง (ชำระแล้ว)')
+                    colors[idx_new] = 'background-color: #f8d7da; color: #721c24;'
+                    colors[idx_diff] = 'background-color: #f8d7da; color: #721c24;'
+                    
+                return colors
+
+            styled_df = df_merge.style.apply(highlight_changes, axis=1).format({
+                'ยอดเดิม (บาท)': '{:,.2f}',
+                'ยอดใหม่ (บาท)': '{:,.2f}',
+                'ส่วนต่าง (ชำระแล้ว)': '{:,.2f}'
+            })
+            
+            st.dataframe(styled_df, use_container_width=True)
+            df_export = df_merge.copy()
+            
+        else:
+            # กรณีอัปโหลดแค่ CSV อย่างเดียว (ไม่มีข้อมูลเดิมมาเทียบ)
+            df_new.rename(columns={'ยอดใหม่ (บาท)': 'ยอดค้างชำระ (บาท)'}, inplace=True)
+            st.write(f"**ดึงข้อมูลล่าสุด:** พบรายชื่อทั้งหมด {len(df_new)} รายการ (ไม่ได้อัปโหลดไฟล์เปรียบเทียบ)")
+            st.dataframe(df_new.style.format({'ยอดค้างชำระ (บาท)': '{:,.2f}'}), use_container_width=True)
+            df_export = df_new.copy()
+
+        # ปุ่มดาวน์โหลด
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df_export.to_excel(writer, index=False, sheet_name='รายงานยอดค้างชำระ')
+            
+        st.download_button(
+            label="📥 ดาวน์โหลดไฟล์ตารางเปรียบเทียบ (Excel)",
+            data=output.getvalue(),
+            file_name=f"เปรียบเทียบยอดค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
