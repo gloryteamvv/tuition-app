@@ -21,7 +21,6 @@ def process_csv(file):
         
         if non_empty and non_empty[0] == "รวมลูกค้า":
             try:
-                # คลีนชื่อและดึงยอดคงค้างล่าสุด
                 student_name = " ".join(non_empty[1].split())
                 student_code = non_empty[2]
                 total_str = non_empty[-1].replace(',', '')
@@ -53,7 +52,8 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
             df_new = pd.DataFrame(all_data)
             
             if not df_old.empty:
-                df_old.rename(columns={'ยอดค้างใหม่ (บาท)': 'ยอดค้างเดิม (บาท)'}, inplace=True)
+                # แก้ปัญหา Error คอลัมน์ไม่ตรง โดยบังคับตั้งชื่อใหม่ให้ถูกต้องเสมอ
+                df_old.columns = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)']
                 
                 df_merge = pd.merge(df_old, df_new, on='รหัสนักเรียน', how='outer', suffixes=('_เก่า', '_ใหม่'))
                 df_merge['ชื่อ-นามสกุล'] = df_merge['ชื่อ-นามสกุล_ใหม่'].fillna(df_merge['ชื่อ-นามสกุล_เก่า'])
@@ -71,11 +71,9 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                     colors = [''] * len(row)
                     paid = row['ยอดที่ชำระเข้ามา (บาท)']
                     
-                    # สีเขียว = มีการจ่ายเงิน (ยอดที่ชำระเข้ามาเป็นบวก)
                     if paid > 0:
                         idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
                         colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
-                    # สีแดง = มีการตั้งหนี้เพิ่ม (ยอดค้างใหม่มากกว่ายอดค้างเดิม)
                     elif paid < 0:
                         idx_new = df_merge.columns.get_loc('ยอดค้างใหม่ (บาท)')
                         idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
@@ -97,7 +95,6 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 df_new_to_save.to_csv(DB_FILE, index=False)
                 st.success("✅ อัปเดตฐานข้อมูลเรียบร้อยแล้ว!")
                 
-                # ปุ่มดาวน์โหลด
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                     df_merge.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
@@ -112,5 +109,6 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
             else:
                 st.write("**ข้อมูลเริ่มต้นในระบบ:**")
                 st.dataframe(df_new.style.format({'ยอดค้างใหม่ (บาท)': '{:,.2f}'}), use_container_width=True)
+                # บันทึกข้อมูลเริ่มต้น
                 df_new.to_csv(DB_FILE, index=False)
                 st.success("✅ สร้างฐานข้อมูลตั้งต้นเรียบร้อยแล้ว!")
