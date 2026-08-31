@@ -21,14 +21,14 @@ def process_csv(file):
         
         if non_empty and non_empty[0] == "รวมลูกค้า":
             try:
-                # ลบช่องว่างส่วนเกินในชื่อออกเพื่อลดปัญหาชื่อไม่ตรง
+                # คลีนชื่อและดึงยอดคงค้างล่าสุด
                 student_name = " ".join(non_empty[1].split())
                 student_code = non_empty[2]
                 total_str = non_empty[-1].replace(',', '')
                 outstanding_data.append({
                     'รหัสนักเรียน': student_code,
                     'ชื่อ-นามสกุล': student_name,
-                    'ยอดค้างชำระล่าสุด (บาท)': float(total_str)
+                    'ยอดค้างใหม่ (บาท)': float(total_str)
                 })
             except Exception:
                 pass
@@ -53,57 +53,51 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
             df_new = pd.DataFrame(all_data)
             
             if not df_old.empty:
-                df_old.rename(columns={'ยอดค้างชำระล่าสุด (บาท)': 'ยอดเดิม (บาท)'}, inplace=True)
-                df_new.rename(columns={'ยอดค้างชำระล่าสุด (บาท)': 'ยอดใหม่ (บาท)'}, inplace=True)
+                df_old.rename(columns={'ยอดค้างใหม่ (บาท)': 'ยอดค้างเดิม (บาท)'}, inplace=True)
                 
-                # เปลี่ยนมาเชื่อมข้อมูลด้วย "รหัสนักเรียน" เท่านั้น ป้องกันปัญหาเปลี่ยนชื่อ/เว้นวรรคผิด
                 df_merge = pd.merge(df_old, df_new, on='รหัสนักเรียน', how='outer', suffixes=('_เก่า', '_ใหม่'))
-                
-                # ใช้ชื่อล่าสุดเสมอ
                 df_merge['ชื่อ-นามสกุล'] = df_merge['ชื่อ-นามสกุล_ใหม่'].fillna(df_merge['ชื่อ-นามสกุล_เก่า'])
                 
-                df_merge['ยอดเดิม (บาท)'] = df_merge['ยอดเดิม (บาท)'].fillna(0)
-                df_merge['ยอดใหม่ (บาท)'] = df_merge['ยอดใหม่ (บาท)'].fillna(0)
+                df_merge['ยอดค้างเดิม (บาท)'] = df_merge['ยอดค้างเดิม (บาท)'].fillna(0)
+                df_merge['ยอดค้างใหม่ (บาท)'] = df_merge['ยอดค้างใหม่ (บาท)'].fillna(0)
                 
-                # ปัดเศษทศนิยม 2 ตำแหน่ง ป้องกัน Error ทศนิยมซ่อนเร้น
-                df_merge['ส่วนต่าง (ชำระแล้ว)'] = (df_merge['ยอดเดิม (บาท)'] - df_merge['ยอดใหม่ (บาท)']).round(2)
+                # คำนวณเงินที่ชำระเข้ามา (ยอดเดิม - ยอดใหม่)
+                df_merge['ยอดที่ชำระเข้ามา (บาท)'] = (df_merge['ยอดค้างเดิม (บาท)'] - df_merge['ยอดค้างใหม่ (บาท)']).round(2)
                 
-                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดเดิม (บาท)', 'ยอดใหม่ (บาท)', 'ส่วนต่าง (ชำระแล้ว)']
+                cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดค้างใหม่ (บาท)', 'ยอดที่ชำระเข้ามา (บาท)']
                 df_merge = df_merge[cols]
                 
                 def highlight_changes(row):
                     colors = [''] * len(row)
-                    diff = row['ส่วนต่าง (ชำระแล้ว)']
+                    paid = row['ยอดที่ชำระเข้ามา (บาท)']
                     
-                    # สีเขียว = ยอดหนี้ลดลง (มีการชำระเงินเข้ามา)
-                    if diff > 0:
-                        idx_new = df_merge.columns.get_loc('ยอดใหม่ (บาท)')
-                        idx_diff = df_merge.columns.get_loc('ส่วนต่าง (ชำระแล้ว)')
-                        colors[idx_new] = 'background-color: #d4edda; color: #155724;'
-                        colors[idx_diff] = 'background-color: #d4edda; color: #155724;'
-                    # สีแดง = ยอดหนี้เพิ่มขึ้น (มีการตั้งหนี้เพิ่ม)
-                    elif diff < 0:
-                        idx_new = df_merge.columns.get_loc('ยอดใหม่ (บาท)')
-                        idx_diff = df_merge.columns.get_loc('ส่วนต่าง (ชำระแล้ว)')
+                    # สีเขียว = มีการจ่ายเงิน (ยอดที่ชำระเข้ามาเป็นบวก)
+                    if paid > 0:
+                        idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
+                        colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
+                    # สีแดง = มีการตั้งหนี้เพิ่ม (ยอดค้างใหม่มากกว่ายอดค้างเดิม)
+                    elif paid < 0:
+                        idx_new = df_merge.columns.get_loc('ยอดค้างใหม่ (บาท)')
+                        idx_paid = df_merge.columns.get_loc('ยอดที่ชำระเข้ามา (บาท)')
                         colors[idx_new] = 'background-color: #f8d7da; color: #721c24;'
-                        colors[idx_diff] = 'background-color: #f8d7da; color: #721c24;'
+                        colors[idx_paid] = 'background-color: #f8d7da; color: #721c24;'
                     return colors
 
                 st.write("**ผลการเปรียบเทียบความเคลื่อนไหว:**")
                 styled_df = df_merge.style.apply(highlight_changes, axis=1).format({
-                    'ยอดเดิม (บาท)': '{:,.2f}',
-                    'ยอดใหม่ (บาท)': '{:,.2f}',
-                    'ส่วนต่าง (ชำระแล้ว)': '{:,.2f}'
+                    'ยอดค้างเดิม (บาท)': '{:,.2f}',
+                    'ยอดค้างใหม่ (บาท)': '{:,.2f}',
+                    'ยอดที่ชำระเข้ามา (บาท)': '{:,.2f}'
                 })
                 st.dataframe(styled_df, use_container_width=True)
                 
-                # อัปเดตฐานข้อมูลใหม่ด้วยชื่อและรหัสที่คลีนแล้ว
-                df_new_to_save = df_merge[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดใหม่ (บาท)']].rename(columns={'ยอดใหม่ (บาท)': 'ยอดค้างชำระล่าสุด (บาท)'})
-                # ตัดคนชำระหนี้หมดแล้วออก (ยอด = 0) จะได้ไม่รกฐานข้อมูลในเดือนหน้า
-                df_new_to_save = df_new_to_save[df_new_to_save['ยอดค้างชำระล่าสุด (บาท)'] != 0]
+                # บันทึกฐานข้อมูลใหม่
+                df_new_to_save = df_merge[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างใหม่ (บาท)']]
+                df_new_to_save = df_new_to_save[df_new_to_save['ยอดค้างใหม่ (บาท)'] != 0]
                 df_new_to_save.to_csv(DB_FILE, index=False)
                 st.success("✅ อัปเดตฐานข้อมูลเรียบร้อยแล้ว!")
                 
+                # ปุ่มดาวน์โหลด
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                     df_merge.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
@@ -117,6 +111,6 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 
             else:
                 st.write("**ข้อมูลเริ่มต้นในระบบ:**")
-                st.dataframe(df_new.style.format({'ยอดค้างชำระล่าสุด (บาท)': '{:,.2f}'}), use_container_width=True)
+                st.dataframe(df_new.style.format({'ยอดค้างใหม่ (บาท)': '{:,.2f}'}), use_container_width=True)
                 df_new.to_csv(DB_FILE, index=False)
                 st.success("✅ สร้างฐานข้อมูลตั้งต้นเรียบร้อยแล้ว!")
