@@ -15,7 +15,8 @@ def process_csv(file):
     reader = csv.reader(io.StringIO(content))
     
     for row in reader:
-        if not row: continue
+        if not row:
+            continue
         non_empty = [x.strip() for x in row if x.strip()]
         
         if non_empty and non_empty[0] == "รวมลูกค้า":
@@ -33,7 +34,11 @@ def process_csv(file):
                 pass
     return outstanding_data
 
-uploaded_files = st.file_uploader("📂 ลากไฟล์ CSV จากโปรแกรม Express มาวางที่นี่ (เลือกได้หลายไฟล์พร้อมกัน)", type=['csv'], accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "📂 ลากไฟล์ CSV จากโปรแกรม Express มาวางที่นี่ (เลือกได้หลายไฟล์พร้อมกัน)", 
+    type=['csv'], 
+    accept_multiple_files=True
+)
 
 if uploaded_files:
     if st.button("ประมวลผลข้อมูล"):
@@ -44,7 +49,7 @@ if uploaded_files:
         if all_data:
             df = pd.DataFrame(all_data)
             st.success(f"ดึงข้อมูลสำเร็จ! พบรายชื่อลูกหนี้ทั้งหมด {len(df)} รายการ")
-            st.dataframe(df)
+            st.dataframe(df, use_container_width=True)
             
             # สร้างไฟล์ Excel ในหน่วยความจำ
             output = io.BytesIO()
@@ -57,7 +62,10 @@ if uploaded_files:
             
             header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
             header_font = Font(color="FFFFFF", bold=True)
-            thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            thin_border = Border(
+                left=Side(style='thin'), right=Side(style='thin'), 
+                top=Side(style='thin'), bottom=Side(style='thin')
+            )
             
             for cell in ws[1]:
                 cell.fill = header_fill
@@ -66,9 +74,15 @@ if uploaded_files:
                 cell.border = thin_border
                 
             total_sum = 0
-            for idx, row in enumerate(df.itertuples(), start=1):
-                ws.append([idx, row.รหัสนักเรียน, getattr(row, 'ชื่อ-นามสกุล'), getattr(row, '_3'), getattr(row, 'อ้างอิงจากไฟล์')])
-                total_sum += getattr(row, '_3')
+            for idx, r in df.iterrows():
+                row_num = idx + 1
+                s_code = r['รหัสนักเรียน']
+                s_name = r['ชื่อ-นามสกุล']
+                s_amount = r['ยอดค้างชำระ (บาท)']
+                s_file = r['อ้างอิงจากไฟล์']
+                
+                ws.append([row_num, s_code, s_name, s_amount, s_file])
+                total_sum += s_amount
                 
             for row in ws.iter_rows(min_row=2, max_row=len(df)+1):
                 for cell in row:
