@@ -1,3 +1,10 @@
+ข้อผิดพลาดนี้เกิดขึ้นเพราะตอนที่คุณอัปโหลดไฟล์ Excel เข้าไปเป็นฐานข้อมูลใหม่ โปรแกรมไม่แน่ใจว่าจะต้องใช้เครื่องมือตัวไหนในการเปิดอ่านไฟล์นั้นครับ (Streamlit ต้องการให้เราระบุชื่อเครื่องมือ หรือ Engine ลงไปให้ชัดเจน)
+
+ผมได้ทำการเพิ่มคำสั่ง `engine='openpyxl'` และทำระบบเช็คภาษา (Encoding) สำหรับอ่านไฟล์ CSV สำรองข้อมูล ให้ครอบคลุมการอัปโหลดทุกรูปแบบเรียบร้อยแล้วครับ
+
+คุณสามารถคัดลอกโค้ดชุดใหม่นี้ไปวางทับในไฟล์ `app.py` บน GitHub ได้เลยครับ:
+
+```python
 import streamlit as st
 import pandas as pd
 import csv
@@ -14,11 +21,15 @@ DB_FILE = "master_database.csv"
 with st.sidebar:
     st.header("⚙️ จัดการฐานข้อมูลตั้งต้น")
     
-    # 1. เช็คสถานะและปุ่มลบ/ดาวน์โหลด
     if os.path.exists(DB_FILE):
         st.success("🟢 สถานะ: มีฐานข้อมูลในระบบ")
         with open(DB_FILE, "rb") as f:
-            st.download_button("💾 ดาวน์โหลดฐานข้อมูลปัจจุบัน", f, file_name=f"database_backup_{datetime.datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+            st.download_button(
+                label="💾 ดาวน์โหลดฐานข้อมูลปัจจุบัน", 
+                data=f, 
+                file_name=f"database_backup_{datetime.datetime.now().strftime('%Y%m%d')}.csv", 
+                mime="text/csv"
+            )
         
         if st.button("🗑️ ล้างฐานข้อมูลเพื่อเริ่มใหม่"):
             os.remove(DB_FILE)
@@ -28,7 +39,6 @@ with st.sidebar:
 
     st.divider()
     
-    # 2. อัปโหลดไฟล์เพื่อเปลี่ยนฐานข้อมูลใหม่
     st.subheader("เปลี่ยนไฟล์ฐานข้อมูลใหม่")
     st.write("อัปโหลดไฟล์ Excel/CSV (คอลัมน์: รหัส, ชื่อ, ยอดเงิน)")
     uploaded_db = st.file_uploader("เลือกไฟล์", type=['csv', 'xlsx'])
@@ -36,18 +46,21 @@ with st.sidebar:
     if uploaded_db is not None:
         if st.button("🔄 อัปเดตเป็นฐานข้อมูลนี้"):
             try:
-                if uploaded_db.name.endswith('.csv'):
-                    df_upload = pd.read_csv(uploaded_db)
+                if uploaded_db.name.lower().endswith('.csv'):
+                    # รองรับทั้งไฟล์ที่โหลดจากเว็บ (utf-8) และไฟล์จาก Express (cp874)
+                    try:
+                        df_upload = pd.read_csv(uploaded_db, encoding='utf-8')
+                    except UnicodeDecodeError:
+                        uploaded_db.seek(0)
+                        df_upload = pd.read_csv(uploaded_db, encoding='cp874')
                 else:
-                    df_upload = pd.read_excel(uploaded_db)
+                    # ระบุ Engine สำหรับไฟล์ Excel ชัดเจนเพื่อแก้ Error
+                    df_upload = pd.read_excel(uploaded_db, engine='openpyxl')
                 
-                # บังคับดึงแค่ 3 คอลัมน์แรก และเปลี่ยนชื่อให้ตรงกับระบบ
                 if len(df_upload.columns) >= 3:
                     df_upload = df_upload.iloc[:, :3]
                     df_upload.columns = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)']
-                    # แปลงยอดเงินเป็นตัวเลข
                     df_upload['ยอดค้างเดิม (บาท)'] = pd.to_numeric(df_upload['ยอดค้างเดิม (บาท)'], errors='coerce').fillna(0)
-                    # ตัดคนที่ยอดเป็น 0 ออก
                     df_upload = df_upload[df_upload['ยอดค้างเดิม (บาท)'] != 0]
                     df_upload.to_csv(DB_FILE, index=False)
                     
@@ -140,7 +153,6 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 })
                 st.dataframe(styled_df, use_container_width=True)
                 
-                # บันทึกฐานข้อมูลใหม่
                 df_new_to_save = df_merge[['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดคงเหลือล่าสุด (บาท)']]
                 df_new_to_save = df_new_to_save[df_new_to_save['ยอดคงเหลือล่าสุด (บาท)'] != 0]
                 df_new_to_save.to_csv(DB_FILE, index=False)
@@ -162,3 +174,5 @@ if st.button("ประมวลผลและอัปเดตระบบ"):
                 st.dataframe(df_new.style.format({'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'}), use_container_width=True)
                 df_new.to_csv(DB_FILE, index=False)
                 st.success("✅ สร้างฐานข้อมูลตั้งต้นเรียบร้อยแล้ว!")
+
+```
