@@ -37,14 +37,13 @@ def create_receipts_pdf(df_paid):
     for idx, row in df_paid.iterrows():
         student_code = row['รหัสนักเรียน']
         student_name = row['ชื่อ-นามสกุล']
-        doc_no = row['เอกสารอ้างอิง'] # มีแค่ 1 เลขแล้ว
-        receipt_no = row['เลขที่ใบเสร็จ']
-        pay_date = row.get('วันที่จ่ายเงิน', '') # ดึงวันที่จ่ายเงิน
+        doc_no = row['เอกสารอ้างอิง'] 
+        salesperson = row.get('พนักงานขาย (ระดับชั้น)', '') # ดึงชื่อระดับชั้น
+        pay_date = row.get('วันที่จ่ายเงิน', '') 
         amount = row['ยอดที่จ่าย (บาท)']
         remain = row['ยอดคงเหลือล่าสุด (บาท)']
         amount_text = bahttext(amount)
         
-        # ใช้วันที่จ่ายเงินแทนวันที่ปัจจุบัน
         today_str = str(pay_date)
         
         # --- ส่วนหัว (Header) ---
@@ -70,9 +69,9 @@ def create_receipts_pdf(df_paid):
         c.drawString(2*cm, 12.8*cm, f"ชื่อ-สกุล                  {student_name}")
         c.drawString(2*cm, 12.1*cm, "ที่อยู่                       ........................................................................")
         
-        c.drawString(17*cm, 13.5*cm, f"เลขที่ใบเสร็จ     {receipt_no}")
+        c.drawString(17*cm, 13.5*cm, "เลขที่ใบเสร็จ     ..............................")
         c.drawString(17*cm, 12.8*cm, f"วันที่                 {today_str}")
-        c.drawString(17*cm, 12.1*cm, "พนักงานขาย     ..............................")
+        c.drawString(17*cm, 12.1*cm, f"พนักงานขาย     {salesperson}")
         
         # --- ตารางรายการ ---
         table_top = 11*cm
@@ -142,6 +141,19 @@ def create_receipts_pdf(df_paid):
 # ==========================================
 st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (Express)")
 
+# ดิกชันนารีแปลงรหัสชั้นเรียน
+GRADE_MAP = {
+    'ปถ1': 'ประถมศึกษาปีที่ 1',
+    'ปถ2': 'ประถมศึกษาปีที่ 2',
+    'ปถ3': 'ประถมศึกษาปีที่ 3',
+    'ปถ4': 'ประถมศึกษาปีที่ 4',
+    'ปถ5': 'ประถมศึกษาปีที่ 5',
+    'ปถ6': 'ประถมศึกษาปีที่ 6',
+    'อบ1': 'อนุบาล 1',
+    'อบ2': 'อนุบาล 2',
+    'อบ3': 'อนุบาล 3'
+}
+
 def process_csv(file):
     results = []
     try:
@@ -155,7 +167,7 @@ def process_csv(file):
     doc_list = [] 
     doc_date_list = [] 
     pay_date_list = [] 
-    receipt_no_list = [] 
+    salesperson_list = [] 
     
     for row in reader:
         if not row: continue
@@ -169,9 +181,12 @@ def process_csv(file):
                     doc_date_list.append(non_empty[0])
                     doc_list.append(non_empty[1])
                     
-                    salesperson = non_empty[-4]
-                    if salesperson and salesperson not in receipt_no_list:
-                        receipt_no_list.append(salesperson)
+                    sales_raw = non_empty[-4]
+                    if sales_raw:
+                        # แปลงรหัสเป็นชื่อเต็ม
+                        sales_mapped = f"{sales_raw}-{GRADE_MAP.get(sales_raw, sales_raw)}" if sales_raw in GRADE_MAP else sales_raw
+                        if sales_mapped not in salesperson_list:
+                            salesperson_list.append(sales_mapped)
                         
                     bill = float(non_empty[-3].replace(',', ''))
                     paid = float(non_empty[-2].replace(',', ''))
@@ -200,11 +215,9 @@ def process_csv(file):
                 if sum_bill == 0 and total_remain > 0:
                     sum_bill = total_remain
                 
-                # ใช้เอกสารอ้างอิงและเลขที่ใบเสร็จ "อันแรก" เท่านั้นตามที่ร้องขอ
                 docs_str = doc_list[0] if doc_list else ""
-                receipts_str = receipt_no_list[0] if receipt_no_list else ""
+                salesperson_str = salesperson_list[0] if salesperson_list else ""
                 
-                # จัดการวันที่จ่ายเงิน (ถ้ามีบรรทัดจ่ายเงินให้ใช้วันที่นั้น ถ้าไม่มีให้ใช้วันที่ออกบิลแทน)
                 if pay_date_list:
                     dates_str = pay_date_list[0]
                 elif doc_date_list:
@@ -217,7 +230,7 @@ def process_csv(file):
                     'ชื่อ-นามสกุล': name,
                     'เอกสารอ้างอิง': docs_str,
                     'วันที่จ่ายเงิน': dates_str, 
-                    'เลขที่ใบเสร็จ': receipts_str, 
+                    'พนักงานขาย (ระดับชั้น)': salesperson_str, 
                     'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
                     'ยอดที่จ่าย (บาท)': round(sum_paid, 2),
                     'ยอดคงเหลือล่าสุด (บาท)': round(total_remain, 2),
@@ -229,7 +242,7 @@ def process_csv(file):
                 doc_list = []
                 doc_date_list = []
                 pay_date_list = []
-                receipt_no_list = []
+                salesperson_list = []
             except Exception:
                 pass
                 
@@ -245,7 +258,7 @@ if st.button("ประมวลผลข้อมูล"):
             
         if all_data:
             df = pd.DataFrame(all_data)
-            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
             df = df[cols]
             
             df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
