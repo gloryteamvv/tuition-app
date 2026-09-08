@@ -39,10 +39,12 @@ def create_receipts_pdf(df_paid):
         student_name = row['ชื่อ-นามสกุล']
         doc_no = row['เอกสารอ้างอิง']
         receipt_no = row['เลขที่ใบเสร็จ']
-        doc_date = row.get('วันที่เอกสาร', '') # ดึงวันที่เอกสาร
+        pay_date = row.get('วันที่จ่ายเงิน', '') # ดึงวันที่จ่ายเงินสำหรับใส่ในตาราง
         amount = row['ยอดที่จ่าย (บาท)']
         remain = row['ยอดคงเหลือล่าสุด (บาท)']
         amount_text = bahttext(amount)
+        
+        # วันที่ออกใบเสร็จ (มุมขวาบน) ใช้วันที่ปัจจุบัน
         today_str = datetime.datetime.now().strftime("%d/%m/%Y")
         
         # --- ส่วนหัว (Header) ---
@@ -109,7 +111,7 @@ def create_receipts_pdf(df_paid):
         
         c.setFont(font_name, 14)
         c.drawCentredString((col_x[2]+col_x[3])/2, data_y, str(doc_no))
-        c.drawCentredString((col_x[3]+col_x[4])/2, data_y, str(doc_date)) # ใส่วันที่ลงในช่อง
+        c.drawCentredString((col_x[3]+col_x[4])/2, data_y, str(pay_date)) # ใส่วันที่จ่ายเงินลงในตาราง
         
         c.setFont(font_name, 16)
         c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{remain:,.2f}")
@@ -151,7 +153,7 @@ def process_csv(file):
     sum_bill = 0.0
     sum_paid = 0.0
     doc_list = [] 
-    doc_date_list = [] # เก็บวันที่เอกสาร
+    pay_date_list = [] # เก็บวันที่จ่ายเงิน
     receipt_no_list = [] 
     
     for row in reader:
@@ -159,10 +161,10 @@ def process_csv(file):
         non_empty = [x.strip() for x in row if x.strip()]
         if not non_empty: continue
         
+        # 1. เช็คบรรทัดใบกำกับ (มีเครื่องหมาย / ในคอลัมน์แรก)
         if '/' in non_empty[0] and len(non_empty) >= 4:
             try:
                 if non_empty[1].startswith('IV') or non_empty[1].startswith('RE'):
-                    doc_date_list.append(non_empty[0]) # วันที่มักจะอยู่คอลัมน์แรกสุด
                     doc_list.append(non_empty[1])
                     
                     salesperson = non_empty[-4]
@@ -176,6 +178,19 @@ def process_csv(file):
             except ValueError:
                 pass
                 
+        # 2. เช็คบรรทัดย่อย (การรับชำระ/ตัดยอด) เพื่อดึง "วันที่จ่ายเงิน"
+        # บรรทัดย่อยมักจะไม่มีเลขเอกสาร IV แต่มีรหัส RE หรือพนักงาน ในคอลัมน์ที่ 8 และวันที่ในคอลัมน์ที่ 9
+        if len(row) >= 10 and not row[1].strip().startswith('รวม'):
+            # ถ้าช่องเอกสาร (index 7) ว่าง แต่ช่องพนักงานขาย/ตัดยอด (index 8) มีข้อมูล
+            if row[8].strip() and not row[7].strip():
+                for cell in row[8:]:
+                    cell = cell.strip()
+                    if len(cell) >= 6 and cell.count('/') >= 1:
+                        if cell not in pay_date_list:
+                            pay_date_list.append(cell)
+                        break
+                        
+        # 3. บรรทัดสรุปรวมลูกค้า
         if non_empty[0] == "รวมลูกค้า":
             try:
                 name = " ".join(non_empty[1].split())
@@ -186,14 +201,21 @@ def process_csv(file):
                     sum_bill = total_remain
                 
                 docs_str = ", ".join(doc_list)
-                dates_str = ", ".join(doc_date_list)
                 receipts_str = ", ".join(receipt_no_list)
+                
+                # จัดการวันที่จ่ายเงิน (ถ้าไม่มีให้ดึงวันที่ปัจจุบันแทน)
+                if pay_date_list:
+                    dates_str = ", ".join(pay_date_list)
+                else:
+                    today = datetime.datetime.now()
+                    # แปลงเป็นปี พ.ศ.
+                    dates_str = f"{today.day:02d}/{today.month:02d}/{today.year + 543}"
                 
                 results.append({
                     'รหัสนักเรียน': code,
                     'ชื่อ-นามสกุล': name,
                     'เอกสารอ้างอิง': docs_str,
-                    'วันที่เอกสาร': dates_str, # เพิ่มในตาราง
+                    'วันที่จ่ายเงิน': dates_str, # คอลัมน์วันที่จ่ายเงิน
                     'เลขที่ใบเสร็จ': receipts_str, 
                     'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
                     'ยอดที่จ่าย (บาท)': round(sum_paid, 2),
@@ -204,7 +226,7 @@ def process_csv(file):
                 sum_bill = 0.0
                 sum_paid = 0.0
                 doc_list = []
-                doc_date_list = []
+                pay_date_list = []
                 receipt_no_list = []
             except Exception:
                 pass
@@ -221,8 +243,8 @@ if st.button("ประมวลผลข้อมูล"):
             
         if all_data:
             df = pd.DataFrame(all_data)
-            # เพิ่มคอลัมน์วันที่เอกสาร
-            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่เอกสาร', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+            # เพิ่มคอลัมน์วันที่จ่ายเงิน
+            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
             df = df[cols]
             
             df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
