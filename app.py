@@ -53,7 +53,6 @@ def create_receipts_pdf(df_paid):
         c.drawString(2*cm, 18*cm, "โรงเรียนศิริมงคลศึกษา บางบัวทอง")
         
         c.setFont(font_name, 14)
-        # นำที่อยู่มาต่อรวมกันเป็นบรรทัดเดียว
         c.drawString(2*cm, 17.2*cm, "เลขที่ 91/1 ซอยศิริมงคล ถนนบางกรวย-ไทรน้อย ต.บางรักพัฒนา อ.บางบัวทอง จังหวัดนนทบุรี")
         c.drawString(2*cm, 16.5*cm, "FAX. 02-920-8133 TEL.08")
         c.drawString(2*cm, 15.8*cm, "เลขประจำตัวผู้เสียภาษี 0994000242379")
@@ -102,14 +101,16 @@ def create_receipts_pdf(df_paid):
         
         # --- ตารางรายการ ---
         table_top = 11*cm
-        table_bottom = 6*cm
+        # ขยับเส้นขอบล่างตารางขึ้นมาจาก 6cm เป็น 8cm
+        table_bottom = 8*cm
         
         c.setFillColor(colors.HexColor('#333333'))
         c.rect(2*cm, table_top-1*cm, 25.5*cm, 1*cm, fill=1, stroke=1)
         
         c.setFillColor(colors.black)
         c.setLineWidth(1)
-        c.rect(2*cm, table_bottom, 25.5*cm, 5*cm) 
+        # วาดกรอบตารางใหม่ให้พอดีกับที่ขยับขึ้น
+        c.rect(2*cm, table_bottom, 25.5*cm, table_top-table_bottom) 
         
         col_x = [2*cm, 3.5*cm, 7.5*cm, 11.5*cm, 14.5*cm, 17.5*cm, 21.5*cm, 24.5*cm, 27.5*cm]
         
@@ -152,19 +153,19 @@ def create_receipts_pdf(df_paid):
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "รวมยอดชำระ")
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{total_amount:,.2f}")
         
-        # --- ส่วนสรุปยอดล่างสุด ---
-        c.drawString(2.5*cm, 5*cm, f"({amount_text})")
-        c.drawString(22*cm, 5*cm, "รวมเป็นเงิน")
+        # --- ส่วนสรุปยอดล่างสุด (ขยับขึ้น 2cm) ---
+        c.drawString(2.5*cm, 7*cm, f"({amount_text})")
+        c.drawString(22*cm, 7*cm, "รวมเป็นเงิน")
         
-        c.rect(24.5*cm, 4.5*cm, 3*cm, 1*cm)
-        c.drawCentredString((col_x[7]+col_x[8])/2, 4.8*cm, f"{total_amount:,.2f}")
+        c.rect(24.5*cm, 6.5*cm, 3*cm, 1*cm)
+        c.drawCentredString((col_x[7]+col_x[8])/2, 6.8*cm, f"{total_amount:,.2f}")
         
-        # --- ท้ายบิล ---
+        # --- ท้ายบิล (ขยับขึ้น 2cm) ---
         c.setFont(font_name, 16)
-        c.drawString(2*cm, 3.5*cm, "การชำระเงินด้วยเช็คจะเสร็จสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
-        c.drawString(2*cm, 2.5*cm, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
-        c.drawString(2*cm, 1.5*cm, "ในนามโรงเรียนศิริมงคลศึกษา บางบัวทอง")
-        c.drawString(2*cm, 0.7*cm, "ผู้รับเงิน ........................................ วันที่ ......./......./.......      ผู้รับมอบอำนาจ ........................................")
+        c.drawString(2*cm, 5.5*cm, "การชำระเงินด้วยเช็คจะเสร็จสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
+        c.drawString(2*cm, 4.5*cm, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
+        c.drawString(2*cm, 3.5*cm, "ในนามโรงเรียนศิริมงคลศึกษา บางบัวทอง")
+        c.drawString(2*cm, 2.5*cm, "ผู้รับเงิน ........................................ วันที่ ......./......./.......      ผู้รับมอบอำนาจ ........................................")
         
         c.showPage()
         
