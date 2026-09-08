@@ -11,6 +11,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import cm
+from reportlab.lib import colors
 from bahttext import bahttext
 
 st.set_page_config(page_title="ระบบสรุปยอดค่าเทอม", layout="wide")
@@ -18,7 +19,6 @@ st.set_page_config(page_title="ระบบสรุปยอดค่าเท�
 # ==========================================
 # ลงทะเบียนฟอนต์ภาษาไทยสำหรับ PDF
 # ==========================================
-# กรุณาตรวจสอบว่ามีไฟล์ฟอนต์นี้อัปโหลดอยู่บน GitHub ในโฟลเดอร์เดียวกัน
 font_path = "THSarabunNew.ttf"
 has_font = False
 if os.path.exists(font_path):
@@ -26,82 +26,111 @@ if os.path.exists(font_path):
     has_font = True
 
 def create_receipts_pdf(df_paid):
-    """ฟังก์ชันสร้างไฟล์ PDF ใบเสร็จรับเงิน"""
+    """ฟังก์ชันสร้างไฟล์ PDF ใบเสร็จรับเงิน แบบใหม่ (มินิมอล คลาสสิค)"""
     packet = io.BytesIO()
-    # ใช้ A4 แนวนอนตามรูปถ่ายใบเสร็จ
     c = canvas.Canvas(packet, pagesize=landscape(A4))
     
     if has_font:
         font_name = 'THSarabun'
     else:
-        font_name = 'Helvetica' # กรณีไม่มีฟอนต์
+        font_name = 'Helvetica'
     
     for idx, row in df_paid.iterrows():
         student_code = row['รหัสนักเรียน']
         student_name = row['ชื่อ-นามสกุล']
         amount = row['ยอดที่จ่าย (บาท)']
-        amount_text = bahttext(amount) # แปลงเป็นคำอ่าน
+        remain = row['ยอดคงเหลือล่าสุด (บาท)']
+        amount_text = bahttext(amount)
         today_str = datetime.datetime.now().strftime("%d/%m/%Y")
         
-        # วาดโครงสร้างใบเสร็จ (ปรับแกน X, Y เป็นเซนติเมตร)
+        # --- ส่วนหัว (Header) ---
+        c.setFont(font_name, 22)
+        c.drawString(2*cm, 18*cm, "โรงเรียนศิริมงคลศึกษา บางบัวทอง")
+        
+        c.setFont(font_name, 14)
+        c.drawString(2*cm, 17.2*cm, "เลขที่ 91/1 ซอยศิริมงคล ถนนบางกรวย-ไทรน้อย ต.บางรัก")
+        c.drawString(2*cm, 16.5*cm, "พัฒนา อ.บางบัวทอง จังหวัดนนทบุรี")
+        c.drawString(2*cm, 15.8*cm, "FAX. 02-920-8133 TEL.08")
+        c.drawString(2*cm, 15.1*cm, "เลขประจำตัวผู้เสียภาษี 0994000242379")
+        
+        # คำว่า ใบเสร็จรับเงิน / Receipt (มุมขวาบน)
+        c.setFont(font_name, 24)
+        c.drawRightString(27.5*cm, 17*cm, "ใบเสร็จรับเงิน / Receipt")
+        
+        # เส้นคั่น
+        c.setStrokeColor(colors.black)
+        c.setLineWidth(0.5)
+        c.line(2*cm, 14.5*cm, 27.5*cm, 14.5*cm)
+        
+        # --- ข้อมูลลูกค้าและเอกสาร ---
+        c.setFont(font_name, 16)
+        c.drawString(2*cm, 13.5*cm, f"ลูกค้า (รหัสลูกค้า)     {student_code}")
+        c.drawString(2*cm, 12.8*cm, f"ชื่อ-สกุล                  {student_name}")
+        c.drawString(2*cm, 12.1*cm, "ที่อยู่                       ........................................................................")
+        
+        c.drawString(17*cm, 13.5*cm, "เลขที่ใบเสร็จ     ..............................")
+        c.drawString(17*cm, 12.8*cm, f"วันที่                 {today_str}")
+        c.drawString(17*cm, 12.1*cm, "พนักงานขาย     ..............................")
+        
+        # --- ตารางรายการ ---
+        table_top = 11*cm
+        table_bottom = 6*cm
+        
+        # วาดแถบสีดำหัวตาราง
+        c.setFillColor(colors.HexColor('#333333'))
+        c.rect(2*cm, table_top-1*cm, 25.5*cm, 1*cm, fill=1, stroke=1)
+        
+        # วาดเส้นขอบตารางและช่องว่าง
+        c.setFillColor(colors.black)
+        c.setLineWidth(1)
+        c.rect(2*cm, table_bottom, 25.5*cm, 5*cm) # กรอบนอกตาราง
+        
+        # กำหนดตำแหน่งแกน X ของแต่ละคอลัมน์ (ความกว้างรวม 25.5cm)
+        col_x = [2*cm, 3.5*cm, 7.5*cm, 11.5*cm, 14.5*cm, 17.5*cm, 21.5*cm, 24.5*cm, 27.5*cm]
+        
+        # ขีดเส้นแบ่งคอลัมน์
+        for x in col_x[1:-1]:
+            c.line(x, table_top, x, table_bottom)
+            
+        # ใส่ตัวอักษรหัวตาราง (สีขาว)
+        c.setFillColor(colors.white)
+        c.setFont(font_name, 14)
+        # ใช้ drawCentredString เพื่อให้อยู่กึ่งกลางคอลัมน์
+        c.drawCentredString((col_x[0]+col_x[1])/2, table_top-0.7*cm, "No.")
+        c.drawCentredString((col_x[1]+col_x[2])/2, table_top-0.7*cm, "ใบวางบิล")
+        c.drawCentredString((col_x[2]+col_x[3])/2, table_top-0.7*cm, "ใบกำกับ#")
+        c.drawCentredString((col_x[3]+col_x[4])/2, table_top-0.7*cm, "วันที่")
+        c.drawCentredString((col_x[4]+col_x[5])/2, table_top-0.7*cm, "ครบกำหนด")
+        c.drawCentredString((col_x[5]+col_x[6])/2, table_top-0.7*cm, "จำนวนเงิน")
+        c.drawCentredString((col_x[6]+col_x[7])/2, table_top-0.7*cm, "ยอดคงค้าง")
+        c.drawCentredString((col_x[7]+col_x[8])/2, table_top-0.7*cm, "ยอดชำระ")
+        
+        # --- ข้อมูลในตาราง ---
+        c.setFillColor(colors.black)
         c.setFont(font_name, 16)
         
-        # ส่วนหัวบริษัท
-        c.drawString(2*cm, 18*cm, "โรงเรียน ศิริมงคลศึกษา บางบัวทอง")
-        c.setFont(font_name, 12)
-        c.drawString(2*cm, 17.5*cm, "เลขที่ 91/1 ซอยศิริมงคล ถนนบางกรวย-ไทรน้อย ต.บางรักพัฒนา อ.บางบัวทอง จังหวัด นนทบุรี")
-        c.drawString(2*cm, 17*cm, "FAX. 02-920-8133 TEL.08")
-        c.drawString(2*cm, 16.5*cm, "เลขประจำตัวผู้เสียภาษี 0994000242379")
+        data_y = table_top - 1.7*cm
+        c.drawCentredString((col_x[0]+col_x[1])/2, data_y, "1")
+        c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "ค่าเทอม/ค่าเล่าเรียน")
+        # ยอดคงค้าง (ยอดเงินที่เหลือหลังจากจ่าย)
+        c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{remain:,.2f}")
+        # ยอดชำระ (จำนวนเงินที่จ่าย)
+        c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{amount:,.2f}")
         
-        # คำว่า ใบเสร็จรับเงิน
-        c.setFont(font_name, 20)
-        c.drawCentredString(14*cm, 18*cm, "ใบเสร็จรับเงิน")
+        # --- ส่วนสรุปยอด ---
+        c.drawString(2.5*cm, 5*cm, f"({amount_text})")
+        c.drawString(22*cm, 5*cm, "รวมเป็นเงิน")
         
-        # ข้อมูลเอกสารมุมขวา
-        c.setFont(font_name, 14)
-        c.drawString(20*cm, 18*cm, "เลขที่ใบเสร็จ: ..............................")
-        c.drawString(20*cm, 17.2*cm, f"วันที่: {today_str}")
-        c.drawString(20*cm, 16.4*cm, "พนักงานขาย: ..............................")
+        # วาดกล่องรวมเงิน
+        c.rect(24.5*cm, 4.5*cm, 3*cm, 1*cm)
+        c.drawCentredString((col_x[7]+col_x[8])/2, 4.8*cm, f"{amount:,.2f}")
         
-        # ข้อมูลลูกค้า
-        c.drawString(2*cm, 15*cm, f"ลูกค้า: {student_code}")
-        c.drawString(2*cm, 14.3*cm, f"ชื่อลูกค้า: {student_name}")
-        c.drawString(2*cm, 13.6*cm, "ที่อยู่ลูกค้า: ........................................................................")
-        
-        # ตารางรายการ
-        # วาดเส้นขอบตารางหลัก
-        c.rect(2*cm, 6*cm, 25*cm, 6*cm)
-        # ขีดเส้นใต้หัวตาราง
-        c.line(2*cm, 11*cm, 27*cm, 11*cm)
-        
-        # หัวคอลัมน์
-        c.drawString(2.5*cm, 11.3*cm, "No.")
-        c.drawString(5*cm, 11.3*cm, "ใบวางบิล")
-        c.drawString(9*cm, 11.3*cm, "ใบกำกับ#")
-        c.drawString(13*cm, 11.3*cm, "วันที่")
-        c.drawString(16*cm, 11.3*cm, "ครบกำหนด")
-        c.drawString(19*cm, 11.3*cm, "จำนวนเงิน")
-        c.drawString(22*cm, 11.3*cm, "ยอดคงค้าง")
-        c.drawString(24.5*cm, 11.3*cm, "ยอดชำระ")
-        
-        # ข้อมูลรายการ (บรรทัดที่ 1)
-        c.drawString(2.5*cm, 10*cm, "1")
-        c.drawString(5*cm, 10*cm, "ค่าเทอม/ค่าเล่าเรียน")
-        # ตรงนี้เราใส่ยอดเงินที่จ่ายในช่อง "จำนวนเงิน" และ "ยอดชำระ"
-        c.drawString(19*cm, 10*cm, f"{amount:,.2f}")
-        c.drawString(24.5*cm, 10*cm, f"{amount:,.2f}")
-        
-        # เส้นกั้นรวมเงิน
-        c.line(2*cm, 7.5*cm, 27*cm, 7.5*cm)
-        c.drawString(2*cm, 6.5*cm, f"({amount_text})")
-        c.drawString(16*cm, 6.5*cm, "รวมเป็นเงิน")
-        c.drawString(24.5*cm, 6.5*cm, f"{amount:,.2f}")
-        
-        # ท้ายบิล
-        c.drawString(2*cm, 5*cm, "การชำระเงินด้วยเช็คจะสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
-        c.drawString(2*cm, 4*cm, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
-        c.drawString(2*cm, 3*cm, "ผู้รับเงิน ........................................ วันที่ ......./......./.......          ในนาม โรงเรียน ศิริมงคลศึกษา บางบัวทอง")
-        c.drawString(15*cm, 3*cm, "ผู้รับมอบอำนาจ ........................................")
+        # --- ท้ายบิล ---
+        c.setFont(font_name, 16)
+        c.drawString(2*cm, 3.5*cm, "การชำระเงินด้วยเช็คจะเสร็จสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
+        c.drawString(2*cm, 2.5*cm, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
+        c.drawString(2*cm, 1.5*cm, "ในนามโรงเรียนศิริมงคลศึกษา บางบัวทอง")
+        c.drawString(2*cm, 0.7*cm, "ผู้รับเงิน ........................................ วันที่ ......./......./.......      ผู้รับมอบอำนาจ ........................................")
         
         # จบหน้า 1 คน
         c.showPage()
@@ -111,7 +140,7 @@ def create_receipts_pdf(df_paid):
     return packet
 
 # ==========================================
-# หน้าจอหลัก (ดึงข้อมูลเหมือนเดิม)
+# หน้าจอหลัก
 # ==========================================
 st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (Express)")
 
@@ -178,7 +207,7 @@ if st.button("ประมวลผลข้อมูล"):
             cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
             df = df[cols]
             
-            # กรองเฉพาะคนที่จ่ายเงิน เพื่อนำไปสร้างใบเสร็จ
+            # กรองเฉพาะคนที่จ่ายเงิน
             df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
             
             def highlight_paid(row):
@@ -191,18 +220,15 @@ if st.button("ประมวลผลข้อมูล"):
 
             st.success(f"✅ ประมวลผลเสร็จสิ้น! พบผู้ชำระเงิน {len(df_paid)} รายการ จากทั้งหมด {len(df)} รายการ")
             
-            # --- ปุ่มดาวน์โหลด ---
             col1, col2 = st.columns(2)
             
             with col1:
-                # 1. ดาวน์โหลด Excel
                 output_excel = io.BytesIO()
                 with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
                     df.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
                 st.download_button("📥 1. ดาวน์โหลดตารางรวม (Excel)", data=output_excel.getvalue(), file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 
             with col2:
-                # 2. ดาวน์โหลดใบเสร็จ PDF (เฉพาะคนจ่าย)
                 if not df_paid.empty:
                     if not has_font:
                         st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ (ภาษาไทยใน PDF อาจไม่สมบูรณ์)")
@@ -210,7 +236,6 @@ if st.button("ประมวลผลข้อมูล"):
                     pdf_packet = create_receipts_pdf(df_paid)
                     st.download_button(f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", data=pdf_packet, file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
             
-            # --- แสดงตาราง ---
             styled_df = df.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
             st.dataframe(styled_df, use_container_width=True)
             
