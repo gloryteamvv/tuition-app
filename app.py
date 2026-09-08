@@ -53,10 +53,10 @@ def create_receipts_pdf(df_paid):
         c.drawString(2*cm, 18*cm, "โรงเรียนศิริมงคลศึกษา บางบัวทอง")
         
         c.setFont(font_name, 14)
-        c.drawString(2*cm, 17.2*cm, "เลขที่ 91/1 ซอยศิริมงคล ถนนบางกรวย-ไทรน้อย ต.บางรัก")
-        c.drawString(2*cm, 16.5*cm, "พัฒนา อ.บางบัวทอง จังหวัดนนทบุรี")
-        c.drawString(2*cm, 15.8*cm, "FAX. 02-920-8133 TEL.08")
-        c.drawString(2*cm, 15.1*cm, "เลขประจำตัวผู้เสียภาษี 0994000242379")
+        # นำที่อยู่มาต่อรวมกันเป็นบรรทัดเดียว
+        c.drawString(2*cm, 17.2*cm, "เลขที่ 91/1 ซอยศิริมงคล ถนนบางกรวย-ไทรน้อย ต.บางรักพัฒนา อ.บางบัวทอง จังหวัดนนทบุรี")
+        c.drawString(2*cm, 16.5*cm, "FAX. 02-920-8133 TEL.08")
+        c.drawString(2*cm, 15.8*cm, "เลขประจำตัวผู้เสียภาษี 0994000242379")
         
         c.setFont(font_name, 24)
         c.drawRightString(27.5*cm, 17*cm, "ใบเสร็จรับเงิน / Receipt")
@@ -147,7 +147,6 @@ def create_receipts_pdf(df_paid):
             
             data_y -= 0.8 * cm 
             
-        # เพิ่มบรรทัดรวมยอดกรณีที่มีหลายบิล (รวมเฉพาะช่อง ยอดชำระ)
         if len(invoices) > 1:
             c.setFont(font_name, 16)
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "รวมยอดชำระ")
