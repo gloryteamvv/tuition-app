@@ -25,7 +25,6 @@ if os.path.exists(font_path):
     has_font = True
 
 def create_receipts_pdf(df_paid):
-    """ฟังก์ชันสร้างไฟล์ PDF ใบเสร็จรับเงิน"""
     packet = io.BytesIO()
     c = canvas.Canvas(packet, pagesize=landscape(A4))
     
@@ -38,7 +37,8 @@ def create_receipts_pdf(df_paid):
         student_code = row['รหัสนักเรียน']
         student_name = row['ชื่อ-นามสกุล']
         doc_no = row['เอกสารอ้างอิง'] 
-        salesperson = row.get('พนักงานขาย (ระดับชั้น)', '') # ดึงชื่อระดับชั้น
+        salesperson = row.get('พนักงานขาย (ระดับชั้น)', '') 
+        receipt_no = row['เลขที่ใบเสร็จ'] # ดึงจากช่อง RE
         pay_date = row.get('วันที่จ่ายเงิน', '') 
         amount = row['ยอดที่จ่าย (บาท)']
         remain = row['ยอดคงเหลือล่าสุด (บาท)']
@@ -69,7 +69,7 @@ def create_receipts_pdf(df_paid):
         c.drawString(2*cm, 12.8*cm, f"ชื่อ-สกุล                  {student_name}")
         c.drawString(2*cm, 12.1*cm, "ที่อยู่                       ........................................................................")
         
-        c.drawString(17*cm, 13.5*cm, "เลขที่ใบเสร็จ     ..............................")
+        c.drawString(17*cm, 13.5*cm, f"เลขที่ใบเสร็จ     {receipt_no}")
         c.drawString(17*cm, 12.8*cm, f"วันที่                 {today_str}")
         c.drawString(17*cm, 12.1*cm, f"พนักงานขาย     {salesperson}")
         
@@ -141,7 +141,6 @@ def create_receipts_pdf(df_paid):
 # ==========================================
 st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (Express)")
 
-# ดิกชันนารีแปลงรหัสชั้นเรียน
 GRADE_MAP = {
     'ปถ1': 'ประถมศึกษาปีที่ 1',
     'ปถ2': 'ประถมศึกษาปีที่ 2',
@@ -168,26 +167,36 @@ def process_csv(file):
     doc_date_list = [] 
     pay_date_list = [] 
     salesperson_list = [] 
+    receipt_no_list = [] # เก็บเลขที่ขึ้นต้นด้วย RE
     
     for row in reader:
         if not row: continue
         non_empty = [x.strip() for x in row if x.strip()]
         if not non_empty: continue
         
+        # ค้นหาค่า RE จากทุกเซลล์ในบรรทัด เพื่อเป็นเลขที่ใบเสร็จ
+        for cell in row:
+            clean_cell = cell.strip()
+            if clean_cell.startswith('RE') and clean_cell not in receipt_no_list:
+                receipt_no_list.append(clean_cell)
+
         # 1. เช็คบรรทัดใบกำกับ
         if '/' in non_empty[0] and len(non_empty) >= 4:
             try:
-                if non_empty[1].startswith('IV') or non_empty[1].startswith('RE'):
+                # เก็บ IV เป็นเอกสารอ้างอิง
+                if non_empty[1].startswith('IV'):
                     doc_date_list.append(non_empty[0])
                     doc_list.append(non_empty[1])
                     
-                    sales_raw = non_empty[-4]
-                    if sales_raw:
-                        # แปลงรหัสเป็นชื่อเต็ม
-                        sales_mapped = f"{sales_raw}-{GRADE_MAP.get(sales_raw, sales_raw)}" if sales_raw in GRADE_MAP else sales_raw
-                        if sales_mapped not in salesperson_list:
-                            salesperson_list.append(sales_mapped)
+                sales_raw = non_empty[-4]
+                if sales_raw and not sales_raw.startswith('RE'):
+                    # แปลงเป็นชื่อเต็มอย่างเดียว โดยไม่มีตัวย่อ
+                    sales_mapped = GRADE_MAP.get(sales_raw, sales_raw)
+                    if sales_mapped not in salesperson_list:
+                        salesperson_list.append(sales_mapped)
                         
+                # ถ้าเจอข้อมูลตัวเลขการเงิน
+                if not non_empty[-2].isalpha():
                     bill = float(non_empty[-3].replace(',', ''))
                     paid = float(non_empty[-2].replace(',', ''))
                     sum_bill += bill
@@ -199,10 +208,10 @@ def process_csv(file):
         if len(row) >= 10 and not row[1].strip().startswith('รวม'):
             if row[8].strip() and not row[7].strip():
                 for cell in row[8:]:
-                    cell = cell.strip()
-                    if len(cell) >= 6 and cell.count('/') >= 1:
-                        if cell not in pay_date_list:
-                            pay_date_list.append(cell)
+                    cell_str = cell.strip()
+                    if len(cell_str) >= 6 and cell_str.count('/') >= 1:
+                        if cell_str not in pay_date_list:
+                            pay_date_list.append(cell_str)
                         break
                         
         # 3. บรรทัดสรุปรวมลูกค้า
@@ -217,6 +226,7 @@ def process_csv(file):
                 
                 docs_str = doc_list[0] if doc_list else ""
                 salesperson_str = salesperson_list[0] if salesperson_list else ""
+                receipts_str = receipt_no_list[0] if receipt_no_list else ""
                 
                 if pay_date_list:
                     dates_str = pay_date_list[0]
@@ -231,6 +241,7 @@ def process_csv(file):
                     'เอกสารอ้างอิง': docs_str,
                     'วันที่จ่ายเงิน': dates_str, 
                     'พนักงานขาย (ระดับชั้น)': salesperson_str, 
+                    'เลขที่ใบเสร็จ': receipts_str, # คอลัมน์เลขที่ใบเสร็จ
                     'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
                     'ยอดที่จ่าย (บาท)': round(sum_paid, 2),
                     'ยอดคงเหลือล่าสุด (บาท)': round(total_remain, 2),
@@ -243,6 +254,7 @@ def process_csv(file):
                 doc_date_list = []
                 pay_date_list = []
                 salesperson_list = []
+                receipt_no_list = []
             except Exception:
                 pass
                 
@@ -258,7 +270,7 @@ if st.button("ประมวลผลข้อมูล"):
             
         if all_data:
             df = pd.DataFrame(all_data)
-            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
             df = df[cols]
             
             df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
