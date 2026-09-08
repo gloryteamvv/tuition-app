@@ -147,11 +147,10 @@ def create_receipts_pdf(df_paid):
             
             data_y -= 0.8 * cm 
             
-        # เพิ่มบรรทัดรวมยอดกรณีที่มีหลายบิล
+        # เพิ่มบรรทัดรวมยอดกรณีที่มีหลายบิล (รวมเฉพาะช่อง ยอดชำระ)
         if len(invoices) > 1:
             c.setFont(font_name, 16)
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "รวมยอดชำระ")
-            c.drawCentredString((col_x[5]+col_x[6])/2, data_y, f"{total_amount:,.2f}") 
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{total_amount:,.2f}")
         
         # --- ส่วนสรุปยอดล่างสุด ---
