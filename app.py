@@ -36,15 +36,19 @@ def create_receipts_pdf(df_paid):
     for idx, row in df_paid.iterrows():
         student_code = row['รหัสนักเรียน']
         student_name = row['ชื่อ-นามสกุล']
-        doc_no = row['เอกสารอ้างอิง'] 
         salesperson = row.get('พนักงานขาย (ระดับชั้น)', '') 
-        receipt_no = row['เลขที่ใบเสร็จ'] # ดึงจากช่อง RE
+        receipt_no = row['เลขที่ใบเสร็จ'] 
         pay_date = row.get('วันที่จ่ายเงิน', '') 
-        amount = row['ยอดที่จ่าย (บาท)']
-        remain = row['ยอดคงเหลือล่าสุด (บาท)']
-        amount_text = bahttext(amount)
+        total_amount = row['ยอดที่จ่าย (บาท)']
+        amount_text = bahttext(total_amount)
         
         today_str = str(pay_date)
+        
+        # ดึงรายการบิลหลายใบ (ถ้ามี)
+        invoices = row.get('รายการบิล', [])
+        # กรณีฉุกเฉินดึงบิลไม่ได้ ให้ใช้ข้อมูลรวม
+        if not isinstance(invoices, list) or len(invoices) == 0:
+            invoices = [{'doc_no': row['เอกสารอ้างอิง'], 'paid': total_amount, 'remain': row['ยอดคงเหลือล่าสุด (บาท)']}]
         
         # --- ส่วนหัว (Header) ---
         c.setFont(font_name, 22)
@@ -63,15 +67,42 @@ def create_receipts_pdf(df_paid):
         c.setLineWidth(0.5)
         c.line(2*cm, 14.5*cm, 27.5*cm, 14.5*cm)
         
-        # --- ข้อมูลลูกค้าและเอกสาร ---
+        # --- ข้อมูลลูกค้าและเอกสาร (จัดบรรทัดให้ตรงกัน) ---
         c.setFont(font_name, 16)
-        c.drawString(2*cm, 13.5*cm, f"ลูกค้า (รหัสลูกค้า)     {student_code}")
-        c.drawString(2*cm, 12.8*cm, f"ชื่อ-สกุล                  {student_name}")
-        c.drawString(2*cm, 12.1*cm, "ที่อยู่                       ........................................................................")
         
-        c.drawString(17*cm, 13.5*cm, f"เลขที่ใบเสร็จ     {receipt_no}")
-        c.drawString(17*cm, 12.8*cm, f"วันที่                 {today_str}")
-        c.drawString(17*cm, 12.1*cm, f"พนักงานขาย     {salesperson}")
+        # ฝั่งซ้าย
+        left_label = 2 * cm
+        left_colon = 5 * cm
+        left_val = 5.3 * cm
+        
+        c.drawString(left_label, 13.5*cm, "ลูกค้า (รหัสลูกค้า)")
+        c.drawString(left_colon, 13.5*cm, ":")
+        c.drawString(left_val, 13.5*cm, f"{student_code}")
+        
+        c.drawString(left_label, 12.8*cm, "ชื่อ-สกุล")
+        c.drawString(left_colon, 12.8*cm, ":")
+        c.drawString(left_val, 12.8*cm, f"{student_name}")
+        
+        c.drawString(left_label, 12.1*cm, "ที่อยู่")
+        c.drawString(left_colon, 12.1*cm, ":")
+        c.drawString(left_val, 12.1*cm, "........................................................................")
+        
+        # ฝั่งขวา
+        right_label = 16.5 * cm
+        right_colon = 19 * cm
+        right_val = 19.3 * cm
+        
+        c.drawString(right_label, 13.5*cm, "เลขที่ใบเสร็จ")
+        c.drawString(right_colon, 13.5*cm, ":")
+        c.drawString(right_val, 13.5*cm, f"{receipt_no}")
+        
+        c.drawString(right_label, 12.8*cm, "วันที่")
+        c.drawString(right_colon, 12.8*cm, ":")
+        c.drawString(right_val, 12.8*cm, f"{today_str}")
+        
+        c.drawString(right_label, 12.1*cm, "พนักงานขาย")
+        c.drawString(right_colon, 12.1*cm, ":")
+        c.drawString(right_val, 12.1*cm, f"{salesperson}")
         
         # --- ตารางรายการ ---
         table_top = 11*cm
@@ -100,28 +131,33 @@ def create_receipts_pdf(df_paid):
         c.drawCentredString((col_x[6]+col_x[7])/2, table_top-0.7*cm, "ยอดคงค้าง")
         c.drawCentredString((col_x[7]+col_x[8])/2, table_top-0.7*cm, "ยอดชำระ")
         
-        # --- ข้อมูลในตาราง ---
+        # --- ข้อมูลในตาราง (วนลูปตามจำนวนบิล) ---
         c.setFillColor(colors.black)
-        c.setFont(font_name, 16)
         
-        data_y = table_top - 1.7*cm
-        c.drawCentredString((col_x[0]+col_x[1])/2, data_y, "1")
-        c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "ค่าเทอม/ค่าเล่าเรียน")
-        
-        c.setFont(font_name, 14)
-        c.drawCentredString((col_x[2]+col_x[3])/2, data_y, str(doc_no))
-        c.drawCentredString((col_x[3]+col_x[4])/2, data_y, str(pay_date)) 
-        
-        c.setFont(font_name, 16)
-        c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{remain:,.2f}")
-        c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{amount:,.2f}")
+        data_y = table_top - 1.5*cm
+        for i, inv in enumerate(invoices):
+            c.setFont(font_name, 16)
+            c.drawCentredString((col_x[0]+col_x[1])/2, data_y, str(i+1))
+            c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "ค่าเทอม/ค่าเล่าเรียน")
+            
+            c.setFont(font_name, 14)
+            c.drawCentredString((col_x[2]+col_x[3])/2, data_y, str(inv['doc_no']))
+            c.drawCentredString((col_x[3]+col_x[4])/2, data_y, str(today_str)) 
+            
+            c.setFont(font_name, 16)
+            # ช่อง "จำนวนเงิน" และ "ยอดชำระ" ใช้ยอด paid ทั้งคู่
+            c.drawCentredString((col_x[5]+col_x[6])/2, data_y, f"{inv['paid']:,.2f}") 
+            c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{inv['remain']:,.2f}")
+            c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{inv['paid']:,.2f}")
+            
+            data_y -= 0.8 * cm # ขยับลงบรรทัดถัดไปทีละ 0.8 ซม.
         
         # --- ส่วนสรุปยอด ---
         c.drawString(2.5*cm, 5*cm, f"({amount_text})")
         c.drawString(22*cm, 5*cm, "รวมเป็นเงิน")
         
         c.rect(24.5*cm, 4.5*cm, 3*cm, 1*cm)
-        c.drawCentredString((col_x[7]+col_x[8])/2, 4.8*cm, f"{amount:,.2f}")
+        c.drawCentredString((col_x[7]+col_x[8])/2, 4.8*cm, f"{total_amount:,.2f}")
         
         # --- ท้ายบิล ---
         c.setFont(font_name, 16)
@@ -167,14 +203,14 @@ def process_csv(file):
     doc_date_list = [] 
     pay_date_list = [] 
     salesperson_list = [] 
-    receipt_no_list = [] # เก็บเลขที่ขึ้นต้นด้วย RE
+    receipt_no_list = []
+    invoices_paid = [] # เก็บรายการบิลที่แยกกัน
     
     for row in reader:
         if not row: continue
         non_empty = [x.strip() for x in row if x.strip()]
         if not non_empty: continue
         
-        # ค้นหาค่า RE จากทุกเซลล์ในบรรทัด เพื่อเป็นเลขที่ใบเสร็จ
         for cell in row:
             clean_cell = cell.strip()
             if clean_cell.startswith('RE') and clean_cell not in receipt_no_list:
@@ -183,28 +219,31 @@ def process_csv(file):
         # 1. เช็คบรรทัดใบกำกับ
         if '/' in non_empty[0] and len(non_empty) >= 4:
             try:
-                # เก็บ IV เป็นเอกสารอ้างอิง
                 if non_empty[1].startswith('IV'):
                     doc_date_list.append(non_empty[0])
                     doc_list.append(non_empty[1])
                     
                 sales_raw = non_empty[-4]
                 if sales_raw and not sales_raw.startswith('RE'):
-                    # แปลงเป็นชื่อเต็มอย่างเดียว โดยไม่มีตัวย่อ
                     sales_mapped = GRADE_MAP.get(sales_raw, sales_raw)
                     if sales_mapped not in salesperson_list:
                         salesperson_list.append(sales_mapped)
                         
-                # ถ้าเจอข้อมูลตัวเลขการเงิน
                 if not non_empty[-2].isalpha():
                     bill = float(non_empty[-3].replace(',', ''))
                     paid = float(non_empty[-2].replace(',', ''))
+                    remain = float(non_empty[-1].replace(',', ''))
+                    
                     sum_bill += bill
                     sum_paid += paid
+                    
+                    # ถ้ามีการจ่ายเงินในบิลนี้ ให้เก็บแยกลงรายการบิลเลย
+                    if paid > 0:
+                        invoices_paid.append({'doc_no': non_empty[1], 'paid': paid, 'remain': remain})
             except ValueError:
                 pass
                 
-        # 2. เช็คบรรทัดย่อย เพื่อดึง "วันที่จ่ายเงิน"
+        # 2. เช็คบรรทัดย่อย ดึงวันที่จ่ายเงิน
         if len(row) >= 10 and not row[1].strip().startswith('รวม'):
             if row[8].strip() and not row[7].strip():
                 for cell in row[8:]:
@@ -224,7 +263,7 @@ def process_csv(file):
                 if sum_bill == 0 and total_remain > 0:
                     sum_bill = total_remain
                 
-                docs_str = doc_list[0] if doc_list else ""
+                docs_str = ", ".join(doc_list)
                 salesperson_str = salesperson_list[0] if salesperson_list else ""
                 receipts_str = receipt_no_list[0] if receipt_no_list else ""
                 
@@ -241,10 +280,11 @@ def process_csv(file):
                     'เอกสารอ้างอิง': docs_str,
                     'วันที่จ่ายเงิน': dates_str, 
                     'พนักงานขาย (ระดับชั้น)': salesperson_str, 
-                    'เลขที่ใบเสร็จ': receipts_str, # คอลัมน์เลขที่ใบเสร็จ
+                    'เลขที่ใบเสร็จ': receipts_str, 
                     'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
                     'ยอดที่จ่าย (บาท)': round(sum_paid, 2),
                     'ยอดคงเหลือล่าสุด (บาท)': round(total_remain, 2),
+                    'รายการบิล': invoices_paid, # ซ่อนเอาไว้ใช้ตอนทำ PDF
                     'อ้างอิงไฟล์': file.name
                 })
                 
@@ -255,6 +295,7 @@ def process_csv(file):
                 pay_date_list = []
                 salesperson_list = []
                 receipt_no_list = []
+                invoices_paid = []
             except Exception:
                 pass
                 
@@ -270,8 +311,10 @@ if st.button("ประมวลผลข้อมูล"):
             
         if all_data:
             df = pd.DataFrame(all_data)
-            cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
-            df = df[cols]
+            
+            # คอลัมน์สำหรับแสดงบนหน้าเว็บและเซฟ Excel (ตัด 'รายการบิล' ทิ้งไม่ให้เกะกะตาราง)
+            display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+            df_display = df[display_cols]
             
             df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
             
@@ -279,7 +322,7 @@ if st.button("ประมวลผลข้อมูล"):
                 colors = [''] * len(row)
                 paid = row['ยอดที่จ่าย (บาท)']
                 if paid > 0:
-                    idx_paid = df.columns.get_loc('ยอดที่จ่าย (บาท)')
+                    idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
                     colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
                 return colors
 
@@ -290,7 +333,7 @@ if st.button("ประมวลผลข้อมูล"):
             with col1:
                 output_excel = io.BytesIO()
                 with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                    df.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
+                    df_display.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
                 st.download_button("📥 1. ดาวน์โหลดตารางรวม (Excel)", data=output_excel.getvalue(), file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 
             with col2:
@@ -298,10 +341,11 @@ if st.button("ประมวลผลข้อมูล"):
                     if not has_font:
                         st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ (ภาษาไทยใน PDF อาจไม่สมบูรณ์)")
                     
+                    # ส่ง Dataframe ตัวเต็ม (ที่แอบซ่อนรายการบิลไว้) ไปให้ฟังก์ชันสร้าง PDF
                     pdf_packet = create_receipts_pdf(df_paid)
                     st.download_button(f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", data=pdf_packet, file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
             
-            styled_df = df.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
+            styled_df = df_display.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
             st.dataframe(styled_df, use_container_width=True)
             
         else:
