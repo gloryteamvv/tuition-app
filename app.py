@@ -81,35 +81,62 @@ st.markdown("""
     }
     
     /* ==============================================================
-       แก้ไขปัญหาปุ่มเปิดเมนูด้านซ้ายอย่างตรงจุด
+       แก้ไขปุ่มเปิดเมนู (Hamburger) ให้แสดงผลตลอดเวลาแบบถาวร
        ============================================================== */
-    /* 1. ทำให้ Header พื้นหลังโปร่งใส ไม่บังเนื้อหา */
+    /* 1. บังคับให้ Header ด้านบนสุดโปร่งใส ไม่บังเนื้อหา */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
+        z-index: 99999 !important;
     }
     
-    /* 2. ซ่อนเมนูจุด 3 จุดขวาบน */
+    /* 2. ซ่อนปุ่ม 3 จุด (Deploy/Settings) ของ Streamlit เพื่อความสะอาดตา */
     [data-testid="stToolbar"] {
         display: none !important;
     }
     
-    /* 3. ซ่อนไอคอนลูกศรเดิมโดยใช้ opacity (เพื่อรักษาขนาดของปุ่มไว้ ไม่ให้ยุบเหลือ 0 พิกเซล) */
-    [data-testid="collapsedControl"] svg {
-        opacity: 0 !important; 
-    }
-    
-    /* 4. แทรกไอคอนขีด 3 ขีด (Hamburger Menu) สีชมพูเข้าไปเป็นพื้นหลังแทน */
+    /* 3. ล็อกปุ่มเปิดเมนูด้านซ้าย ให้แสดง "ตลอดเวลา" ไม่จางหายไป */
     [data-testid="collapsedControl"] {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff6e8a'%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E") !important;
-        background-size: 26px !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        transition: 0.2s !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        opacity: 1 !important; /* สำคัญมาก: ลบล้างคำสั่งซ่อนปุ่มของ Streamlit */
+        visibility: visible !important;
+        background-color: white !important; /* ตีกรอบสีขาวให้เด่นชัด */
+        border: 2px solid #ff6e8a !important;
+        border-radius: 8px !important;
+        width: 45px !important;
+        height: 45px !important;
+        margin-top: 10px !important;
+        margin-left: 10px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        z-index: 999999 !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* 5. เปลี่ยนเป็นสีส้มพาสเทลเมื่อเอาเมาส์ชี้ (Hover) */
+    /* 4. เปลี่ยนสีปุ่มตอนเอาเมาส์ชี้ (Hover) */
     [data-testid="collapsedControl"]:hover {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff8d6d'%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E") !important;
+        background-color: #ff6e8a !important;
+        border-color: #ff6e8a !important;
+        cursor: pointer !important;
+    }
+    
+    /* 5. ซ่อนรูปไอคอนลูกศรดั้งเดิม */
+    [data-testid="collapsedControl"] svg {
+        display: none !important;
+    }
+    
+    /* 6. สร้างขีด 3 ขีด (☰) แทนที่ */
+    [data-testid="collapsedControl"]::after {
+        content: "☰" !important;
+        font-size: 26px !important;
+        color: #ff6e8a !important;
+        font-weight: bold !important;
+        line-height: 1 !important;
+    }
+    
+    /* 7. เปลี่ยนสีขีด 3 ขีดให้เป็นสีขาวตอนเอาเมาส์ชี้ */
+    [data-testid="collapsedControl"]:hover::after {
+        color: white !important;
     }
     /* ============================================================== */
 
