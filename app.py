@@ -38,7 +38,7 @@ st.markdown("""
     }
     [data-testid="stSidebar"] * {
         color: #e6e9ef !important;
-        font-size: 14px; /* ปรับขนาดอักษรในเมนูซ้าย */
+        font-size: 14px;
     }
     /* ให้ปุ่มกดยังคงเด่นชัด */
     [data-testid="stSidebar"] button * {
@@ -49,13 +49,12 @@ st.markdown("""
     .stApp {
         background-color: #f4f6f9;
     }
-    header {visibility: hidden;}
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
         background-color: white;
         border-radius: 8px;
-        padding: 15px; /* ลดระยะขอบในให้สมส่วน */
+        padding: 15px; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #e0e4e8;
         border-left: 5px solid #3b82f6;
@@ -72,7 +71,7 @@ st.markdown("""
         font-weight: 600;
     }
     .kpi-value {
-        font-size: 24px; /* ลดขนาดตัวเลข KPI ลงนิดหน่อย */
+        font-size: 24px; 
         font-weight: bold;
         color: #0f172a;
     }
@@ -96,7 +95,7 @@ st.markdown("""
         border-radius: 4px 4px 0 0;
         color: #475569;
         font-weight: 600;
-        font-size: 14px; /* ลดขนาดฟอนต์บนแท็บ */
+        font-size: 14px;
         padding: 0 15px;
         border: 1px solid #e2e8f0;
         border-bottom: none;
