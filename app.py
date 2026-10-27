@@ -547,18 +547,19 @@ if st.session_state['processed_data']:
             st.markdown("**🔍 คัดกรองข้อมูล (Filters)**")
             fcol1, fcol2 = st.columns(2)
             
-            gender_list = ['ทั้งหมด'] + list(df_paid['เพศ'].unique())
+            gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
             selected_gender = fcol1.selectbox("เลือกเพศ:", gender_list)
             
-            grade_list = ['ทั้งหมด'] + list(df_paid['กลุ่มช่วงชั้น'].unique())
-            selected_grade = fcol2.selectbox("เลือกกลุ่มช่วงชั้น:", grade_list)
+            # เปลี่ยน Dropdown ให้เลือกตามระดับชั้น (อ.1 - ป.6)
+            grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
+            selected_grade = fcol2.selectbox("เลือกระดับชั้น (อ.1 - ป.6):", grade_list)
             
             # กรองข้อมูลตาม Drop-down
             df_filtered = df_paid.copy()
             if selected_gender != 'ทั้งหมด':
                 df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
             if selected_grade != 'ทั้งหมด':
-                df_filtered = df_filtered[df_filtered['กลุ่มช่วงชั้น'] == selected_grade]
+                df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
                 
             # แสดงตัวเลขหลังกรอง
             total_amt = df_filtered['ยอดที่จ่าย (บาท)'].sum()
@@ -570,9 +571,23 @@ if st.session_state['processed_data']:
             
             st.divider()
             
+            # --- แสดงรายชื่อนักเรียนตามประเภทที่กรอง ---
+            st.markdown(f"**📋 รายชื่อนักเรียนที่ชำระเงินแล้ว (ตรงตามเงื่อนไขที่เลือก)**")
+            if len(df_filtered) > 0:
+                # เลือกโชว์เฉพาะคอลัมน์ที่จำเป็น
+                cols_to_show = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เพศ', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'ยอดที่จ่าย (บาท)']
+                st.dataframe(
+                    df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), 
+                    use_container_width=True
+                )
+            else:
+                st.warning("ไม่มีข้อมูลนักเรียนที่ตรงกับเงื่อนไขที่เลือก")
+
+            st.divider()
+            
             # --- ส่วนกราฟ (Drop-down) ---
             view_type = st.selectbox(
-                "📊 เลือกรูปแบบกราฟสรุปยอด:",
+                "📊 เลือกรูปแบบกราฟสรุปยอดภาพรวม:",
                 ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถมต้น/ประถมปลาย)", 
                  "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", 
                  "👦👧 สรุปตามเพศ (ชาย/หญิง)"]
@@ -582,16 +597,11 @@ if st.session_state['processed_data']:
                 if "กลุ่มช่วงชั้น" in view_type:
                     summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
-                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
                     
                 elif "ระดับชั้นย่อย" in view_type:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
                     
                 elif "เพศ" in view_type:
                     summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('เพศ'))
-                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
-            else:
-                st.warning("ไม่มีข้อมูลตรงกับเงื่อนไขที่เลือก")
