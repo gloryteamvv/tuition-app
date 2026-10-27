@@ -83,6 +83,7 @@ st.markdown("""
     /* ==============================================================
        ตั้งค่าปุ่มแถบเมนู (Hamburger Menu) ให้แสดงผลและใช้งานได้จริง
        ============================================================== */
+    /* ทำให้แถบด้านบนโปร่งใส */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
     }
@@ -92,25 +93,28 @@ st.markdown("""
         display: none !important;
     }
     
-    /* ซ่อนไอคอนลูกศรเดิม และกำหนดให้แสดงเป็น ☰ */
-    button[kind="header"] svg, 
-    [data-testid="collapsedControl"] svg,
-    [data-testid="baseButton-header"] svg {
-        display: none !important;
-    }
-    
-    button[kind="header"]::before,
-    [data-testid="collapsedControl"]::before,
-    [data-testid="baseButton-header"]::before {
-        content: "☰" !important;
-        font-size: 26px !important;
-        color: #ff6e8a !important;
-        font-weight: bold !important;
+    /* ซ่อนไอคอนลูกศรเดิม และกำหนดให้แสดงเป็นปุ่มขีด 3 ขีด ☰ แทน */
+    [data-testid="collapsedControl"] {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 40px !important;
-        height: 40px !important;
+        width: 45px !important;
+        height: 45px !important;
+        border-radius: 8px !important;
+        margin-top: 5px !important;
+        margin-left: 5px !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        display: none !important;
+    }
+    [data-testid="collapsedControl"]::after {
+        content: "☰" !important;
+        font-size: 30px !important;
+        color: #ff6e8a !important;
+        font-weight: bold !important;
+    }
+    [data-testid="collapsedControl"]:hover::after {
+        color: #ff8d6d !important;
     }
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
