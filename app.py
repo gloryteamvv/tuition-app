@@ -21,7 +21,7 @@ from bahttext import bahttext
 st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# Custom CSS ปรับแต่ง UI ตามชุดสีที่กำหนด และเปลี่ยนปุ่มเป็นขีด 3 ขีด
+# Custom CSS ปรับแต่ง UI และแก้ไขปุ่มเมนู 3 ขีด
 # ==========================================
 st.markdown("""
 <style>
@@ -81,32 +81,36 @@ st.markdown("""
     }
     
     /* ==============================================================
-       ตั้งค่าปุ่มแถบเมนู (Hamburger Menu) เป็นขีด 3 ขีด 
+       ตั้งค่าปุ่มแถบเมนู (Hamburger Menu) ให้แสดงผลและใช้งานได้จริง
        ============================================================== */
-    /* ทำให้ Header โปร่งใส ไม่บังเนื้อหาแต่ปุ่มยังกดได้ */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
     }
     
-    /* ซ่อนปุ่มจุด 3 จุด มุมขวาบน */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-    }
-    
-    /* ซ่อนไอคอนลูกศรเดิมตอนย่อแถบ */
-    button[data-testid="collapsedControl"] svg {
+    /* ซ่อนเมนูจุด 3 จุดขวาบน */
+    [data-testid="stActionElements"], [data-testid="stToolbar"] {
         display: none !important;
     }
     
-    /* ใส่ไอคอนขีด 3 ขีด (Hamburger) สีชมพูแทนที่ */
-    button[data-testid="collapsedControl"]::before {
-        content: "☰";
-        font-size: 28px;
-        color: #ff6e8a; 
-        font-weight: bold;
+    /* ซ่อนไอคอนลูกศรเดิม และกำหนดให้แสดงเป็น ☰ */
+    button[kind="header"] svg, 
+    [data-testid="collapsedControl"] svg,
+    [data-testid="baseButton-header"] svg {
+        display: none !important;
     }
-    button[data-testid="collapsedControl"]:hover::before {
-        color: #ff8d6d;
+    
+    button[kind="header"]::before,
+    [data-testid="collapsedControl"]::before,
+    [data-testid="baseButton-header"]::before {
+        content: "☰" !important;
+        font-size: 26px !important;
+        color: #ff6e8a !important;
+        font-weight: bold !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 40px !important;
+        height: 40px !important;
     }
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
