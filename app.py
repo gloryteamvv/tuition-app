@@ -501,6 +501,7 @@ if process_btn:
                 
         all_data.extend(list(csv_dict.values()))
         
+        # ตรวจสอบว่ามีข้อมูลหรือไม่
         if len(all_data) > 0:
             st.session_state['processed_data'] = all_data
             st.sidebar.success(f"✅ ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
@@ -567,20 +568,28 @@ else:
     with tab_dashboard:
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # เปลี่ยน Dropdown เป็น Checkbox แนวนอน (Radio)
-        gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
-        selected_gender = st.radio("👦👧 คัดกรองเพศ:", gender_list, horizontal=True)
+        st.markdown("##### 🔍 คัดกรองข้อมูล")
+        filter_col1, filter_col2 = st.columns(2)
         
-        st.write("") # เว้นบรรทัด
+        # เปลี่ยนเป็น Multiselect (Dropdown แบบมี Checkbox ให้เลือกหลายตัว)
+        gender_list = sorted(list(df_paid['เพศ'].unique()))
+        selected_gender = filter_col1.multiselect("👦👧 คัดกรองเพศ (เลือกได้หลายตัวเลือก):", options=gender_list, default=gender_list)
         
-        grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
-        selected_grade = st.radio("📚 คัดกรองระดับชั้น:", grade_list, horizontal=True)
+        grade_list = sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
+        selected_grade = filter_col2.multiselect("📚 คัดกรองระดับชั้น (เลือกได้หลายตัวเลือก):", options=grade_list, default=grade_list)
         
         df_filtered = df_paid.copy()
-        if selected_gender != 'ทั้งหมด': 
-            df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
-        if selected_grade != 'ทั้งหมด': 
-            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
+        
+        # กรองข้อมูลตามที่ติ๊กเลือก (ถ้าไม่เลือกอะไรเลย จะแสดงตารางว่าง)
+        if selected_gender:
+            df_filtered = df_filtered[df_filtered['เพศ'].isin(selected_gender)]
+        else:
+            df_filtered = df_filtered[df_filtered['เพศ'].isin([])] # ให้ตารางว่าง
+            
+        if selected_grade:
+            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'].isin(selected_grade)]
+        else:
+            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'].isin([])] # ให้ตารางว่าง
             
         st.divider()
         chart_col, table_col = st.columns([1.2, 1])
@@ -588,14 +597,17 @@ else:
         with chart_col:
             st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
             if len(df_filtered) > 0:
-                # ระบบสลับกราฟอัตโนมัติตามตัวเลือก
-                if selected_grade != 'ทั้งหมด' and selected_gender == 'ทั้งหมด':
+                # ระบบสลับกราฟอัตโนมัติตามตัวเลือกที่มีการกรอง
+                filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
+                filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
+                
+                if filtered_grade and not filtered_gender:
                     summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('เพศ'))
-                elif selected_gender != 'ทั้งหมด' and selected_grade == 'ทั้งหมด':
+                elif filtered_gender and not filtered_grade:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                elif selected_gender != 'ทั้งหมด' and selected_grade != 'ทั้งหมด':
+                elif filtered_gender and filtered_grade:
                     summary = df_filtered.groupby('วันที่จ่ายเงิน')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('วันที่จ่ายเงิน'))
                 else:
