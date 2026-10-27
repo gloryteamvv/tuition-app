@@ -37,12 +37,10 @@ def clean_name_th(name):
     return n
 
 def extract_gender(name, title_from_form=""):
-    # เช็คจากคำนำหน้าของ Google Form ก่อน
     if title_from_form:
         if 'ชาย' in str(title_from_form) or 'ด.ช.' in str(title_from_form): return 'ชาย'
         if 'หญิง' in str(title_from_form) or 'ด.ญ.' in str(title_from_form): return 'หญิง'
     
-    # ถ้าไม่มีให้เช็คจากชื่อที่ติดคำนำหน้ามา
     n = str(name).replace(' ', '').strip()
     if n.startswith('ด.ช.') or n.startswith('เด็กชาย') or n.startswith('นาย'): return 'ชาย'
     if n.startswith('ด.ญ.') or n.startswith('เด็กหญิง') or n.startswith('นาง'): return 'หญิง'
@@ -263,7 +261,7 @@ def pull_google_sheet_data(sheet_url):
                 if amount_raw.replace('.','',1).isdigit():
                     amount = float(amount_raw)
                     if amount > 0:
-                        title_student = str(row.iloc[4]).strip() # คำนำหน้าชื่อนักเรียน
+                        title_student = str(row.iloc[4]).strip() 
                         first_name = str(row.iloc[5]).strip()
                         last_name = str(row.iloc[6]).strip()
                         full_name = f"{first_name} {last_name}"
@@ -334,7 +332,6 @@ def process_csv(file):
             if clean_cell.startswith('RE') and clean_cell not in receipt_no_list:
                 receipt_no_list.append(clean_cell)
 
-        # เก็บชื่อลูกค้าเพื่อดึงเพศ
         if len(non_empty) >= 5 and non_empty[1] == "" and non_empty[2] == "" and non_empty[3] != "" and non_empty[4] != "":
             if "หน้า" not in non_empty[3] and "พนักงานขาย" not in non_empty[3] and "ประเภทลูกค้า" not in non_empty[1]:
                 current_name = " ".join(non_empty[3].split())
@@ -357,7 +354,7 @@ def process_csv(file):
                     if len(non_empty) >= 6:
                         sales_raw = non_empty[2]
                         if sales_raw and not sales_raw.startswith('RE') and not sales_raw.replace('.','').isdigit():
-                            salesperson_list.append(sales_raw) # เก็บ Raw ไว้ก่อน
+                            salesperson_list.append(sales_raw) 
                     
                     sum_bill += bill
                     sum_paid += paid
@@ -440,7 +437,6 @@ def process_csv(file):
 # ==========================================
 st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (พร้อม Dashboard)")
 
-# ใช้ Session State เพื่อเก็บข้อมูล ป้องกันข้อมูลหายตอนกดดู Dashboard
 if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
@@ -479,7 +475,6 @@ if st.button("🚀 ประมวลผลข้อมูล"):
                 g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
                 g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
                 
-                # หาก Google Form ขาดข้อมูลเพศหรือชั้น ให้ดึงจาก CSV
                 if g['เพศ'] == 'ไม่ระบุ': g['เพศ'] = csv_record['เพศ']
                 if g['กลุ่มช่วงชั้น'] == 'ไม่ระบุ': g['กลุ่มช่วงชั้น'] = csv_record['กลุ่มช่วงชั้น']
                 if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
@@ -498,7 +493,6 @@ if st.button("🚀 ประมวลผลข้อมูล"):
             
     all_data.extend(list(csv_dict.values()))
     
-    # เก็บข้อมูลลง State
     st.session_state['processed_data'] = all_data
 
 # ==========================================
@@ -508,7 +502,6 @@ if st.session_state['processed_data']:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
     
-    # สร้าง Tab แยกหน้า
     tab1, tab2 = st.tabs(["📄 สรุปยอดและใบเสร็จ", "📈 แดชบอร์ดสรุป (Dashboard)"])
     
     with tab1:
@@ -550,32 +543,55 @@ if st.session_state['processed_data']:
         if df_paid.empty:
             st.info("ยังไม่มีข้อมูลการชำระเงินในระบบ")
         else:
-            total_amt = df_paid['ยอดที่จ่าย (บาท)'].sum()
-            total_ppl = len(df_paid)
+            # --- ส่วนฟิลเตอร์ (Drop-down) ---
+            st.markdown("**🔍 คัดกรองข้อมูล (Filters)**")
+            fcol1, fcol2 = st.columns(2)
+            
+            gender_list = ['ทั้งหมด'] + list(df_paid['เพศ'].unique())
+            selected_gender = fcol1.selectbox("เลือกเพศ:", gender_list)
+            
+            grade_list = ['ทั้งหมด'] + list(df_paid['กลุ่มช่วงชั้น'].unique())
+            selected_grade = fcol2.selectbox("เลือกกลุ่มช่วงชั้น:", grade_list)
+            
+            # กรองข้อมูลตาม Drop-down
+            df_filtered = df_paid.copy()
+            if selected_gender != 'ทั้งหมด':
+                df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
+            if selected_grade != 'ทั้งหมด':
+                df_filtered = df_filtered[df_filtered['กลุ่มช่วงชั้น'] == selected_grade]
+                
+            # แสดงตัวเลขหลังกรอง
+            total_amt = df_filtered['ยอดที่จ่าย (บาท)'].sum()
+            total_ppl = len(df_filtered)
             
             mcol1, mcol2 = st.columns(2)
-            mcol1.metric("👥 จำนวนนักเรียนที่ชำระแล้ว", f"{total_ppl} คน")
-            mcol2.metric("💰 ยอดรับชำระรวมทั้งหมด", f"{total_amt:,.2f} บาท")
+            mcol1.metric("👥 จำนวนนักเรียนที่ชำระแล้ว (ตามเงื่อนไข)", f"{total_ppl} คน")
+            mcol2.metric("💰 ยอดรับชำระรวม (ตามเงื่อนไข)", f"{total_amt:,.2f} บาท")
             
             st.divider()
             
-            view_type = st.radio(
-                "เลือกรูปแบบการสรุปข้อมูล:",
-                ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถมต้น/ประถมปลาย)", "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", "👦👧 สรุปตามเพศ (ชาย/หญิง)"],
-                horizontal=True
+            # --- ส่วนกราฟ (Drop-down) ---
+            view_type = st.selectbox(
+                "📊 เลือกรูปแบบกราฟสรุปยอด:",
+                ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถมต้น/ประถมปลาย)", 
+                 "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", 
+                 "👦👧 สรุปตามเพศ (ชาย/หญิง)"]
             )
             
-            if "กลุ่มช่วงชั้น" in view_type:
-                summary = df_paid.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
-                st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
-                
-            elif "ระดับชั้นย่อย" in view_type:
-                summary = df_paid.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
-                
-            elif "เพศ" in view_type:
-                summary = df_paid.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                st.bar_chart(summary.set_index('เพศ'))
-                st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
+            if len(df_filtered) > 0:
+                if "กลุ่มช่วงชั้น" in view_type:
+                    summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
+                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
+                    
+                elif "ระดับชั้นย่อย" in view_type:
+                    summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
+                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
+                    
+                elif "เพศ" in view_type:
+                    summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('เพศ'))
+                    st.dataframe(summary.style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True)
+            else:
+                st.warning("ไม่มีข้อมูลตรงกับเงื่อนไขที่เลือก")
