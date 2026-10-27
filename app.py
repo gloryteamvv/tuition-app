@@ -20,57 +20,58 @@ from bahttext import bahttext
 st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# Custom CSS ปรับแต่ง UI ธีม "พาสเทล (Pastel)"
+# Custom CSS ปรับแต่ง UI ตามชุดสีที่กำหนด
+# #009460 25%, #ff6e8a 25%, #B8e7ca 17%, #f5e0a4 16%, #ff8d6d 8%, #185f93 8%
 # ==========================================
 st.markdown("""
 <style>
-    /* ลดขนาดหัวข้อ (Headings) และเปลี่ยนสีโทนพาสเทล */
-    h1 { font-size: 26px !important; margin-bottom: 10px !important; color: #546e7a !important; }
-    h2 { font-size: 22px !important; color: #f48fb1 !important; } 
-    h3 { font-size: 18px !important; color: #546e7a !important; }
-    h4 { font-size: 16px !important; color: #546e7a !important; }
-    h5 { font-size: 15px !important; color: #f48fb1 !important; }
+    /* ลดขนาดหัวข้อ (Headings) และเปลี่ยนสี */
+    h1 { font-size: 26px !important; margin-bottom: 10px !important; color: #009460 !important; } 
+    h2 { font-size: 22px !important; color: #ff6e8a !important; } 
+    h3 { font-size: 18px !important; color: #009460 !important; }
+    h4 { font-size: 16px !important; color: #009460 !important; }
+    h5 { font-size: 15px !important; color: #185f93 !important; }
     
-    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - สีชมพูพาสเทลอ่อน */
+    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - ใช้สี #B8e7ca (17%) */
     [data-testid="stSidebar"] {
-        background-color: #fce4ec; 
+        background-color: #B8e7ca; 
     }
     [data-testid="stSidebar"] * {
-        color: #475569 !important; /* สีเทาเข้มให้อ่านง่าย */
+        color: #185f93 !important; 
         font-size: 14px;
     }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
-        color: #d81b60 !important;
+        color: #009460 !important; 
     }
     [data-testid="stSidebar"] button * {
         font-size: 16px !important;
         font-weight: bold;
     }
-    /* ปุ่ม Primary สีชมพูพาสเทล */
+    /* ปุ่ม Primary - ใช้สี #ff6e8a (25%) */
     button[kind="primary"] {
-        background-color: #f48fb1 !important;
-        border-color: #f48fb1 !important;
+        background-color: #ff6e8a !important;
+        border-color: #ff6e8a !important;
         color: white !important;
     }
     button[kind="primary"]:hover {
-        background-color: #f06292 !important;
+        background-color: #ff8d6d !important; 
+        border-color: #ff8d6d !important;
     }
     
-    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) ให้เป็นสีพาสเทล บังคับทับสีเดิม */
+    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) - ใช้สี #f5e0a4 (16%) */
     div[data-baseweb="select"] span[data-baseweb="tag"] {
-        background-color: #fce4ec !important; /* พื้นหลังชมพูพาสเทลอ่อน */
-        color: #d81b60 !important; /* ตัวหนังสือสีชมพูเข้ม */
-        border: 1px solid #f48fb1 !important; /* ขอบสีชมพู */
+        background-color: #f5e0a4 !important; 
+        color: #185f93 !important; 
+        border: 1px solid #f5e0a4 !important; 
     }
     div[data-baseweb="select"] span[data-baseweb="tag"] span {
-        color: #d81b60 !important; 
+        color: #185f93 !important; 
     }
-    /* สีไอคอนกากบาท (X) ในตัวเลือก */
     div[data-baseweb="select"] span[data-baseweb="tag"] svg {
-        fill: #d81b60 !important; 
+        fill: #185f93 !important; 
     }
     div[data-baseweb="select"] span[data-baseweb="tag"] div[role="button"]:hover {
-        background-color: #f8bbd0 !important; /* สีตอนเอาเมาส์ชี้กากบาท */
+        background-color: #e6c875 !important; 
     }
     
     .stApp {
@@ -78,35 +79,35 @@ st.markdown("""
     }
     header {visibility: hidden;}
     
-    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) ธีมพาสเทล */
+    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
         background-color: white;
         border-radius: 8px;
         padding: 15px; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         border: 1px solid #f0f0f0;
-        border-left: 5px solid #a5d6a7; /* สีหลัก เขียวพาสเทล */
+        border-left: 5px solid #009460; 
         margin-bottom: 15px;
     }
-    .kpi-card.green { border-left-color: #a5d6a7; } /* เขียวพาสเทล */
-    .kpi-card.blue { border-left-color: #90caf9; } /* ฟ้าพาสเทล */
-    .kpi-card.purple { border-left-color: #ce93d8; } /* ม่วงพาสเทล */
-    .kpi-card.orange { border-left-color: #ffcc80; } /* ส้มพาสเทล */
+    .kpi-card.green { border-left-color: #009460; } 
+    .kpi-card.yellow { border-left-color: #f5e0a4; } 
+    .kpi-card.pink { border-left-color: #ff6e8a; } 
+    .kpi-card.orange { border-left-color: #ff8d6d; } 
     
     .kpi-title {
         font-size: 13px;
-        color: #90a4ae;
+        color: #185f93; 
         margin-bottom: 5px;
         font-weight: 600;
     }
     .kpi-value {
         font-size: 24px; 
         font-weight: bold;
-        color: #455a64; 
+        color: #009460; 
     }
     .kpi-unit {
         font-size: 13px;
-        color: #f48fb1; 
+        color: #ff6e8a; 
         font-weight: normal;
     }
     
@@ -122,7 +123,7 @@ st.markdown("""
         height: 45px;
         background-color: #fefefe;
         border-radius: 4px 4px 0 0;
-        color: #94a3b8;
+        color: #185f93;
         font-weight: 600;
         font-size: 14px;
         padding: 0 15px;
@@ -130,7 +131,7 @@ st.markdown("""
         border-bottom: none;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #f48fb1 !important; /* ชมพูพาสเทล */
+        background-color: #ff6e8a !important; 
         color: white !important;
     }
 </style>
@@ -168,7 +169,6 @@ def extract_gender(name, title_from_form=""):
     return 'ไม่ระบุ'
 
 def get_grade_info(raw_grade):
-    # ลบช่องว่างทั้งหมดออกก่อนตรวจสอบ ทำให้จับคู่ได้แม่นยำ 100% ไม่ว่าจะพิมพ์เว้นวรรคแบบไหน
     clean_raw = str(raw_grade).replace(' ', '').strip()
     
     # ตรวจสอบประถม
@@ -466,7 +466,15 @@ if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
 with st.sidebar:
-    st.markdown("### 🏢 Vieng Center")
+    # ----------------------------------------
+    # แสดงโลโก้ Vieng Center
+    # ----------------------------------------
+    logo_path = "logo.png"
+    if os.path.exists(logo_path):
+        st.image(logo_path, use_container_width=True)
+    else:
+        st.markdown("### <span style='color:#009460;'>Vieng</span> <span style='color:#ff6e8a;'>Center</span>", unsafe_allow_html=True)
+        
     st.divider()
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
@@ -533,7 +541,7 @@ if process_btn:
 # ==========================================
 
 st.markdown("##### 🏠 Vieng Center > ทะเบียนรับเงิน")
-st.markdown(f"<span style='font-size:14px; color:#90a4ae;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='font-size:14px; color:#185f93;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
@@ -557,14 +565,14 @@ else:
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
-        <div class="kpi-card blue">
+        <div class="kpi-card yellow">
             <div class="kpi-title">👥 นักเรียนที่ชำระแล้ว</div>
             <div class="kpi-value">{total_students_paid} <span class="kpi-unit">คน</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
-        <div class="kpi-card purple">
+        <div class="kpi-card pink">
             <div class="kpi-title">📱 โอนผ่านออนไลน์ (Form)</div>
             <div class="kpi-value">{online_count} <span class="kpi-unit">รายการ</span></div>
         </div>
@@ -617,10 +625,10 @@ else:
                 
                 if filtered_grade or filtered_gender:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'), color="#f48fb1") # ชมพูพาสเทล
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'), color="#ff6e8a") 
                 else:
                     summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'), color="#a5d6a7") # เขียวพาสเทล
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'), color="#009460") 
             else:
                 st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
                 
@@ -671,7 +679,7 @@ else:
             colors = [''] * len(row)
             if row['ยอดที่จ่าย (บาท)'] > 0:
                 idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
-                colors[idx_paid] = 'background-color: #e8f5e9; color: #2e7d32; font-weight: bold;' # ไฮไลต์เขียวพาสเทล
+                colors[idx_paid] = 'background-color: #B8e7ca; color: #185f93; font-weight: bold;' 
             return colors
             
         styled_df = df_display.style.apply(highlight_paid, axis=1).format({
