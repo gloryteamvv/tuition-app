@@ -24,87 +24,42 @@ st.set_page_config(page_title="ระบบบัญชีสถานศึก�
 # ==========================================
 st.markdown("""
 <style>
-    /* ลดขนาดหัวข้อ (Headings) ทั่วทั้งหน้า */
     h1 { font-size: 26px !important; margin-bottom: 10px !important; }
     h2 { font-size: 22px !important; }
     h3 { font-size: 18px !important; }
     h4 { font-size: 16px !important; }
     h5 { font-size: 15px !important; }
     
-    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) */
-    [data-testid="stSidebar"] {
-        background-color: #122345;
-        color: white;
-    }
-    [data-testid="stSidebar"] * {
-        color: #e6e9ef !important;
-        font-size: 14px;
-    }
-    /* ให้ปุ่มกดยังคงเด่นชัด */
-    [data-testid="stSidebar"] button * {
-        font-size: 16px !important;
-        font-weight: bold;
-        color: white !important;
-    }
+    [data-testid="stSidebar"] { background-color: #122345; color: white; }
+    [data-testid="stSidebar"] * { color: #e6e9ef !important; font-size: 14px; }
+    [data-testid="stSidebar"] button * { font-size: 16px !important; font-weight: bold; }
     
-    .stApp {
-        background-color: #f4f6f9;
-    }
+    .stApp { background-color: #f4f6f9; }
+    header { visibility: hidden; }
     
-    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
-        background-color: white;
-        border-radius: 8px;
-        padding: 15px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e0e4e8;
-        border-left: 5px solid #3b82f6;
-        margin-bottom: 15px;
+        background-color: white; border-radius: 8px; padding: 15px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e0e4e8;
+        border-left: 5px solid #3b82f6; margin-bottom: 15px;
     }
     .kpi-card.green { border-left-color: #10b981; }
     .kpi-card.purple { border-left-color: #8b5cf6; }
     .kpi-card.orange { border-left-color: #f59e0b; }
     
-    .kpi-title {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 5px;
-        font-weight: 600;
-    }
-    .kpi-value {
-        font-size: 24px; 
-        font-weight: bold;
-        color: #0f172a;
-    }
-    .kpi-unit {
-        font-size: 13px;
-        color: #94a3b8;
-        font-weight: normal;
-    }
+    .kpi-title { font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
+    .kpi-value { font-size: 24px; font-weight: bold; color: #0f172a; }
+    .kpi-unit { font-size: 13px; color: #94a3b8; font-weight: normal; }
     
-    /* ปรับแต่งขนาดแท็บ (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 5px;
-        background-color: white;
-        padding: 5px 10px 0 10px;
-        border-radius: 8px 8px 0 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        gap: 5px; background-color: white; padding: 5px 10px 0 10px;
+        border-radius: 8px 8px 0 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .stTabs [data-baseweb="tab"] {
-        height: 45px;
-        background-color: #f8fafc;
-        border-radius: 4px 4px 0 0;
-        color: #475569;
-        font-weight: 600;
-        font-size: 14px;
-        padding: 0 15px;
-        border: 1px solid #e2e8f0;
-        border-bottom: none;
+        height: 45px; background-color: #f8fafc; border-radius: 4px 4px 0 0;
+        color: #475569; font-weight: 600; font-size: 14px; padding: 0 15px;
+        border: 1px solid #e2e8f0; border-bottom: none;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #1e3a8a !important;
-        color: white !important;
-    }
+    .stTabs [aria-selected="true"] { background-color: #1e3a8a !important; color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -119,21 +74,19 @@ if os.path.exists(font_path):
     has_font = True
 
 # ==========================================
-# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อ และแยกหมวดหมู่)
+# ฟังก์ชันตัวช่วย
 # ==========================================
 def clean_name_th(name):
     n = str(name).replace(' ', '').strip()
     prefixes = ['ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'นาย', 'นาง', 'นางสาว']
     for p in prefixes:
-        if n.startswith(p):
-            n = n[len(p):]
+        if n.startswith(p): n = n[len(p):]
     return n
 
 def extract_gender(name, title_from_form=""):
     if title_from_form:
         if 'ชาย' in str(title_from_form) or 'ด.ช.' in str(title_from_form): return 'ชาย'
         if 'หญิง' in str(title_from_form) or 'ด.ญ.' in str(title_from_form): return 'หญิง'
-    
     n = str(name).replace(' ', '').strip()
     if n.startswith('ด.ช.') or n.startswith('เด็กชาย') or n.startswith('นาย'): return 'ชาย'
     if n.startswith('ด.ญ.') or n.startswith('เด็กหญิง') or n.startswith('นาง'): return 'หญิง'
@@ -141,24 +94,14 @@ def extract_gender(name, title_from_form=""):
 
 def get_grade_info(raw_grade):
     mapping = {
-        'ปถ1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
-        'ปถ2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ปถ3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
-        'ปถ4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ปถ5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
-        'ปถ6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
-        'อบ1': ('อนุบาล', 'อนุบาล 1'),
-        'อบ2': ('อนุบาล', 'อนุบาล 2'),
-        'อบ3': ('อนุบาล', 'อนุบาล 3'),
-        'อนุบาล 1': ('อนุบาล', 'อนุบาล 1'),
-        'อนุบาล 2': ('อนุบาล', 'อนุบาล 2'),
-        'อนุบาล 3': ('อนุบาล', 'อนุบาล 3'),
-        'ประถมศึกษาปีที่ 1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
-        'ประถมศึกษาปีที่ 2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ประถมศึกษาปีที่ 3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
-        'ประถมศึกษาปีที่ 4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ประถมศึกษาปีที่ 5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
-        'ประถมศึกษาปีที่ 6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
+        'ปถ1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'), 'ปถ2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
+        'ปถ3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'), 'ปถ4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
+        'ปถ5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'), 'ปถ6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
+        'อบ1': ('อนุบาล', 'อนุบาล 1'), 'อบ2': ('อนุบาล', 'อนุบาล 2'), 'อบ3': ('อนุบาล', 'อนุบาล 3'),
+        'อนุบาล 1': ('อนุบาล', 'อนุบาล 1'), 'อนุบาล 2': ('อนุบาล', 'อนุบาล 2'), 'อนุบาล 3': ('อนุบาล', 'อนุบาล 3'),
+        'ประถมศึกษาปีที่ 1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'), 'ประถมศึกษาปีที่ 2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
+        'ประถมศึกษาปีที่ 3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'), 'ประถมศึกษาปีที่ 4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
+        'ประถมศึกษาปีที่ 5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'), 'ประถมศึกษาปีที่ 6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
     }
     clean_raw = str(raw_grade).strip()
     return mapping.get(clean_raw, ('ไม่ระบุ', clean_raw))
@@ -169,11 +112,7 @@ def get_grade_info(raw_grade):
 def create_receipts_pdf(df_paid):
     packet = io.BytesIO()
     c = canvas.Canvas(packet, pagesize=landscape(A4))
-    
-    if has_font:
-        font_name = 'THSarabun'
-    else:
-        font_name = 'Helvetica'
+    font_name = 'THSarabun' if has_font else 'Helvetica'
     
     for idx, row in df_paid.iterrows():
         student_code = row['รหัสนักเรียน']
@@ -183,7 +122,6 @@ def create_receipts_pdf(df_paid):
         pay_date = row.get('วันที่จ่ายเงิน', '') 
         total_amount = row['ยอดที่จ่าย (บาท)']
         amount_text = bahttext(total_amount)
-        
         today_str = str(pay_date)
         
         invoices = row.get('รายการบิล', [])
@@ -207,29 +145,23 @@ def create_receipts_pdf(df_paid):
         
         c.setFont(font_name, 16)
         left_label, left_colon, left_val = 2 * cm, 5 * cm, 5.3 * cm
-        
         c.drawString(left_label, 13.5*cm, "ลูกค้า (รหัสลูกค้า)")
         c.drawString(left_colon, 13.5*cm, ":")
         c.drawString(left_val, 13.5*cm, f"{student_code}")
-        
         c.drawString(left_label, 12.8*cm, "ชื่อ-สกุล")
         c.drawString(left_colon, 12.8*cm, ":")
         c.drawString(left_val, 12.8*cm, f"{student_name}")
-        
         c.drawString(left_label, 12.1*cm, "ที่อยู่")
         c.drawString(left_colon, 12.1*cm, ":")
         c.drawString(left_val, 12.1*cm, "........................................................................")
         
         right_label, right_colon, right_val = 16.5 * cm, 19 * cm, 19.3 * cm
-        
         c.drawString(right_label, 13.5*cm, "เลขที่ใบเสร็จ")
         c.drawString(right_colon, 13.5*cm, ":")
         c.drawString(right_val, 13.5*cm, f"{receipt_no}")
-        
         c.drawString(right_label, 12.8*cm, "วันที่")
         c.drawString(right_colon, 12.8*cm, ":")
         c.drawString(right_val, 12.8*cm, f"{today_str}")
-        
         c.drawString(right_label, 12.1*cm, "พนักงานขาย")
         c.drawString(right_colon, 12.1*cm, ":")
         c.drawString(right_val, 12.1*cm, f"{salesperson}")
@@ -244,7 +176,6 @@ def create_receipts_pdf(df_paid):
         
         c.setFillColor(colors.HexColor('#333333'))
         c.rect(2*cm, table_top-1*cm, 25.5*cm, 1*cm, fill=1, stroke=1)
-        
         c.setFillColor(colors.black)
         c.setLineWidth(1)
         c.rect(2*cm, table_bottom, 25.5*cm, table_height) 
@@ -308,7 +239,6 @@ def create_receipts_pdf(df_paid):
     packet.seek(0)
     return packet
 
-
 # --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
 @st.cache_data(ttl=60)
 def pull_google_sheet_data(sheet_url):
@@ -353,7 +283,7 @@ def pull_google_sheet_data(sheet_url):
                         })
             except Exception: continue
     except Exception as e:
-        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
+        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
@@ -435,7 +365,6 @@ def process_csv(file):
             except Exception: pass
     return results
 
-
 # ==========================================
 # Layout : Sidebar (เมนูด้านซ้าย)
 # ==========================================
@@ -449,17 +378,14 @@ with st.sidebar:
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
     
-    # ส่วน Google Form
     gsheet_url = "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing"
     use_gsheet = st.checkbox("🌐 ดึงข้อมูลจาก Google Form (โอนเงิน)", value=True)
     
-    # ส่วน CSV Express
     st.markdown(" ")
     uploaded_files = st.file_uploader("📂 อัปโหลดรายงาน CSV (เงินสด/เช็ค)", type=['csv'], accept_multiple_files=True)
     
     st.divider()
     process_btn = st.button("🚀 ประมวลผลข้อมูล", use_container_width=True, type="primary")
-
 
 # ==========================================
 # โลจิกประมวลผล (เมื่อกดปุ่ม)
@@ -501,7 +427,6 @@ if process_btn:
                 
         all_data.extend(list(csv_dict.values()))
         
-        # ตรวจสอบว่ามีข้อมูลหรือไม่
         if len(all_data) > 0:
             st.session_state['processed_data'] = all_data
             st.sidebar.success(f"✅ ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
@@ -523,13 +448,11 @@ else:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
     
-    # คำนวณ KPI
     total_revenue = df_paid['ยอดที่จ่าย (บาท)'].sum()
     total_students_paid = len(df_paid)
     online_count = len(df_paid[df_paid['source'] == 'online'])
     express_count = len(df_paid[df_paid['source'] == 'express'])
     
-    # แสดงการ์ด KPI 4 ใบเรียงกัน
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
@@ -567,11 +490,10 @@ else:
     # ------------------ TAB: Dashboard ------------------
     with tab_dashboard:
         st.markdown("<br>", unsafe_allow_html=True)
-        
         st.markdown("##### 🔍 คัดกรองข้อมูล")
+        
         filter_col1, filter_col2 = st.columns(2)
         
-        # ใช้ Multiselect ให้ติ๊กเลือกได้หลายตัวเลือกพร้อมกัน
         gender_list = sorted(list(df_paid['เพศ'].unique()))
         selected_gender = filter_col1.multiselect("👦👧 คัดกรองเพศ (เลือกได้หลายตัวเลือก):", options=gender_list, default=gender_list)
         
@@ -580,7 +502,6 @@ else:
         
         df_filtered = df_paid.copy()
         
-        # กรองข้อมูล
         if selected_gender:
             df_filtered = df_filtered[df_filtered['เพศ'].isin(selected_gender)]
         else:
@@ -600,16 +521,12 @@ else:
                 filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
                 filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
                 
-                if filtered_grade and not filtered_gender:
-                    summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('เพศ'))
-                elif filtered_gender and not filtered_grade:
+                # ลอจิกใหม่: ถ้ามีการกรองข้อมูล (เพศ หรือ ระดับชั้น) กราฟจะแสดงเป็นยอดแบ่งตาม "ระดับชั้นย่อย (อ.1 - ป.6)" เสมอ
+                if filtered_grade or filtered_gender:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                elif filtered_gender and filtered_grade:
-                    summary = df_filtered.groupby('วันที่จ่ายเงิน')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('วันที่จ่ายเงิน'))
                 else:
+                    # ถ้าไม่ได้กรองอะไรเลย (แสดงค่าเริ่มต้นทั้งหมด) จะแสดงกราฟรวมกลุ่มช่วงชั้น (อนุบาล/ประถม)
                     summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
             else:
