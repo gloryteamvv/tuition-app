@@ -208,62 +208,69 @@ GRADE_MAP = {
 }
 
 # --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
-@st.cache_data(ttl=60) # ช่วยจำข้อมูล 60 วินาที เพื่อไม่ให้ดึงข้อมูลซ้ำซ้อนจนเครื่องช้า
+@st.cache_data(ttl=60)
 def pull_google_sheet_data(sheet_url):
     results = []
     try:
-        # สกัดหา ID ของ Sheet จากลิงก์
         match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
         if not match:
             return []
         
         sheet_id = match.group(1)
-        # สร้างลิงก์ดึงข้อมูล CSV อัตโนมัติ (ต้องเปิดแชร์ลิงก์เป็นสาธารณะ)
         csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
         
         df_gs = pd.read_csv(csv_url)
         
         for idx, row in df_gs.iterrows():
             try:
-                # ดึงยอดเงิน (อ้างอิงจากคอลัมน์ AX หรือ Index ที่ 49)
-                # เราใช้ try-except หรือตรวจสอบความยาวเพื่อความปลอดภัย
-                if len(row) > 49:
-                    amount_raw = str(row.iloc[49]).replace(',', '')
-                else:
-                    # ป้องกันกรณีฟอร์มสั้นลง หาคำว่า "ยอดเงิน"
-                    col_amount = [c for c in df_gs.columns if 'ยอดเงิน' in str(c)]
-                    amount_raw = str(row[col_amount[0]]).replace(',', '') if col_amount else "0"
+                # 1. ค้นหาคอลัมน์ "ยอดเงิน" (คอลัมน์ AX)
+                col_amount = [c for c in df_gs.columns if 'ยอดเงิน' in str(c)]
+                amount_raw = str(row[col_amount[-1]]).replace(',', '') if col_amount else "0"
                 
                 if amount_raw.replace('.','',1).isdigit():
                     amount = float(amount_raw)
                     if amount > 0:
-                        # ดึงข้อมูลนักเรียน (ชื่ออยู่คอลัมน์ F, นามสกุลคอลัมน์ G)
+                        # 2. ดึงชื่อนักเรียนจาก Index ของฟอร์มนี้ (คอลัมน์ F, G)
                         first_name = str(row.iloc[5]).strip()
                         last_name = str(row.iloc[6]).strip()
                         full_name = f"{first_name} {last_name}"
                         
-                        grade = str(row.iloc[7]).strip() # คอลัมน์ H ระดับชั้น
-                        timestamp = str(row.iloc[0]).split(' ')[0] # ประทับเวลา
+                        # 3. ดึงระดับชั้น (คอลัมน์ H)
+                        grade = str(row.iloc[7]).strip() 
                         
-                        # สร้างประวัติการจ่าย
+                        # 4. ดึงวันที่จากประทับเวลา (คอลัมน์ A)
+                        raw_time = str(row.iloc[0]).split(' ')[0] 
+                        # แปลงรูปแบบวันที่เป็น DD/MM/YYYY
+                        try:
+                            d, m, y = raw_time.split('/')
+                            # Google sheet บางทีปีเป็น ค.ศ. บางทีเป็น พ.ศ.
+                            year = int(y)
+                            if year < 2500: year += 543
+                            timestamp = f"{int(d):02d}/{int(m):02d}/{year}"
+                        except:
+                            timestamp = raw_time
+                            
+                        # 5. ดึงลิงก์สลิป (คอลัมน์ AS)
+                        slip_link = str(row.iloc[44]) if len(row) > 44 else "มีสลิปแนบ"
+                        
                         results.append({
-                            'รหัสนักเรียน': '-', # Google Form ไม่ได้กรอกรหัส
+                            'รหัสนักเรียน': '-', 
                             'ชื่อ-นามสกุล': full_name,
                             'เอกสารอ้างอิง': 'Google Form',
                             'วันที่จ่ายเงิน': timestamp, 
                             'พนักงานขาย (ระดับชั้น)': grade, 
-                            'เลขที่ใบเสร็จ': 'โอนเงิน', 
-                            'ยอดค้างเดิม (บาท)': amount, # ถือว่ายอดบิลเท่ายอดโอน
+                            'เลขที่ใบเสร็จ': 'โอนผ่านฟอร์ม', 
+                            'ยอดค้างเดิม (บาท)': amount, 
                             'ยอดที่จ่าย (บาท)': amount,
                             'ยอดคงเหลือล่าสุด (บาท)': 0,
-                            'รายการบิล': [{'doc_no': 'Google Form', 'bill': amount, 'paid': amount, 'remain': 0}],
-                            'อ้างอิงไฟล์': 'Google Sheet API'
+                            'รายการบิล': [{'doc_no': 'จาก Google Form', 'bill': amount, 'paid': amount, 'remain': 0}],
+                            'อ้างอิงไฟล์': 'Google Sheet'
                         })
             except Exception:
                 continue
                 
     except Exception as e:
-        st.error(f"⚠️ ไม่สามารถดึงข้อมูล Google Sheet ได้ (กรุณาเช็คว่าเปิดสิทธิ์การแชร์หรือยัง) รายละเอียด: {e}")
+        st.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตั้งค่าแชร์ลิงก์เป็น 'ทุกคนที่มีลิงก์') รายละเอียด: {e}")
         
     return results
 
@@ -391,7 +398,8 @@ def process_csv(file):
 # ==========================================
 
 st.subheader("1️⃣ ข้อมูลจาก Google Form (สลิปโอนเงิน)")
-gsheet_url = st.text_input("ลิงก์ Google Sheet:", "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit")
+# ตั้งค่าลิงก์ที่คุณส่งมาให้เป็นค่าเริ่มต้น
+gsheet_url = st.text_input("ลิงก์ Google Sheet:", "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing")
 use_gsheet = st.checkbox("✅ ดึงข้อมูลอัตโนมัติจาก Google Form", value=True)
 
 st.divider()
@@ -402,7 +410,7 @@ uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์ CSV", 
 if st.button("🚀 ประมวลผลข้อมูลและสร้างใบเสร็จ"):
     all_data = []
     
-    # 1. ดึงข้อมูล Google Sheet (ถ้าติ๊กถูก)
+    # 1. ดึงข้อมูล Google Sheet
     if use_gsheet and gsheet_url:
         gsheet_data = pull_google_sheet_data(gsheet_url)
         if gsheet_data:
