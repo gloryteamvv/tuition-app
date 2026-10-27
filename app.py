@@ -24,30 +24,25 @@ st.set_page_config(page_title="ระบบบัญชีสถานศึก�
 # ==========================================
 st.markdown("""
 <style>
-    /* ปรับสีพื้นหลังแถบด้านซ้าย (Sidebar) ให้เป็นสีน้ำเงินเข้ม */
     [data-testid="stSidebar"] {
         background-color: #122345;
         color: white;
     }
-    /* สีตัวอักษรใน Sidebar */
     [data-testid="stSidebar"] * {
         color: #e6e9ef !important;
     }
-    /* ปรับสีพื้นหลังหลัก */
     .stApp {
         background-color: #f4f6f9;
     }
-    /* ซ่อน Header พื้นฐานของ Streamlit */
     header {visibility: hidden;}
     
-    /* สไตล์สำหรับการ์ดสรุปยอด (KPI Cards) */
     .kpi-card {
         background-color: white;
         border-radius: 8px;
         padding: 20px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #e0e4e8;
-        border-left: 5px solid #3b82f6; /* สีเส้นขอบซ้าย */
+        border-left: 5px solid #3b82f6;
         margin-bottom: 20px;
     }
     .kpi-card.green { border-left-color: #10b981; }
@@ -71,7 +66,6 @@ st.markdown("""
         font-weight: normal;
     }
     
-    /* ปรับแท็บ */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background-color: white;
@@ -342,7 +336,7 @@ def pull_google_sheet_data(sheet_url):
                         })
             except Exception: continue
     except Exception as e:
-        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้")
+        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
@@ -454,7 +448,7 @@ with st.sidebar:
 # โลจิกประมวลผล (เมื่อกดปุ่ม)
 # ==========================================
 if process_btn:
-    with st.spinner('กำลังประมวลผลข้อมูล...'):
+    with st.spinner('กำลังดึงและประมวลผลข้อมูล...'):
         csv_data = []
         if uploaded_files:
             for file in uploaded_files:
@@ -489,15 +483,21 @@ if process_btn:
                 all_data.append(g)
                 
         all_data.extend(list(csv_dict.values()))
-        st.session_state['processed_data'] = all_data
+        
+        # ตรวจสอบว่ามีข้อมูลหรือไม่
+        if len(all_data) > 0:
+            st.session_state['processed_data'] = all_data
+            st.sidebar.success(f"✅ ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
+        else:
+            st.session_state['processed_data'] = []
+            st.sidebar.error("❌ ไม่พบข้อมูลลูกหนี้! กรุณาตรวจสอบไฟล์อัปโหลด หรือลิงก์ Google Form")
 
 # ==========================================
 # Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
 
-# จำลอง Breadcrumb และส่วนหัวให้เหมือนต้นแบบ
 st.markdown("##### 🏠 ระบบบัญชีสถานศึกษา > ทะเบียนรับเงิน")
-st.markdown(f"**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ยอด ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}")
+st.markdown(f"**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}")
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
@@ -641,7 +641,6 @@ else:
             'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
         })
         
-        # ปรับสีกรอบตารางให้กลืนกับ UI ใหม่
         st.markdown("""
         <style>
             [data-testid="stDataFrame"] { border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
