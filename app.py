@@ -5,6 +5,7 @@ import io
 import datetime
 import os
 import re
+import base64
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
@@ -47,15 +48,17 @@ st.markdown("""
         font-size: 16px !important;
         font-weight: bold;
     }
-    /* ปุ่ม Primary - ใช้สี #ff6e8a (25%) */
+    
+    /* ปุ่ม Primary - ใช้สี #ff6e8a (25%) และตัวหนังสือสี #185f93 ให้อ่านง่าย */
     button[kind="primary"] {
         background-color: #ff6e8a !important;
         border-color: #ff6e8a !important;
-        color: white !important;
+        color: #185f93 !important; 
     }
     button[kind="primary"]:hover {
         background-color: #ff8d6d !important; /* Hover สี #ff8d6d (8%) */
         border-color: #ff8d6d !important;
+        color: white !important;
     }
     
     /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) - ใช้สี #f5e0a4 (16%) */
@@ -77,6 +80,7 @@ st.markdown("""
     .stApp {
         background-color: #fafafa;
     }
+    header {visibility: hidden;}
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
@@ -131,7 +135,7 @@ st.markdown("""
     }
     .stTabs [aria-selected="true"] {
         background-color: #ff6e8a !important; /* แท็บ Active สี #ff6e8a */
-        color: white !important;
+        color: #185f93 !important; /* เปลี่ยนตัวหนังสือเป็นสีเข้มให้อ่านง่าย */
     }
 </style>
 """, unsafe_allow_html=True)
@@ -184,6 +188,10 @@ def get_grade_info(raw_grade):
     if '3' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 3')
     
     return ('ไม่ระบุ', str(raw_grade).strip())
+
+def get_image_base64(path):
+    with open(path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
 
 # ==========================================
 # ฟังก์ชันสร้าง PDF
@@ -464,13 +472,14 @@ def process_csv(file):
 if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
+logo_path = "logo.png"
+
 with st.sidebar:
     # ----------------------------------------
-    # แสดงโลโก้ Vieng Center
+    # แสดงโลโก้ Vieng Center ขนาดเล็กลง (ปรับ width=120)
     # ----------------------------------------
-    logo_path = "logo.png"
     if os.path.exists(logo_path):
-        st.image(logo_path, use_container_width=True)
+        st.image(logo_path, width=130)
     else:
         st.markdown("### <span style='color:#009460;'>Vieng</span> <span style='color:#ff6e8a;'>Center</span>", unsafe_allow_html=True)
         
@@ -539,7 +548,15 @@ if process_btn:
 # Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
 
-st.markdown("##### 🏠 Vieng Center > ทะเบียนรับเงิน")
+# ----------------------------------------
+# แสดงโลโก้ขนาดเล็กในหัวข้อ (แทน 🏠)
+# ----------------------------------------
+if os.path.exists(logo_path):
+    logo_b64 = get_image_base64(logo_path)
+    st.markdown(f"##### <img src='data:image/png;base64,{logo_b64}' width='24' style='vertical-align: middle; margin-right: 8px;'> <span style='vertical-align: middle;'>Vieng Center > ทะเบียนรับเงิน</span>", unsafe_allow_html=True)
+else:
+    st.markdown("##### 🏠 Vieng Center > ทะเบียนรับเงิน")
+
 st.markdown(f"<span style='font-size:14px; color:#185f93;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
