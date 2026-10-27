@@ -17,7 +17,7 @@ from bahttext import bahttext
 # ==========================================
 # ตั้งค่าหน้าเพจแบบ Wide และธีม
 # ==========================================
-st.set_page_config(page_title="ระบบบัญชีสถานศึกษา - สรุปยอดค่าเทอม", page_icon="🏫", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
 # Custom CSS ปรับแต่ง UI ธีม "พาสเทล (Pastel)"
@@ -54,6 +54,17 @@ st.markdown("""
     }
     button[kind="primary"]:hover {
         background-color: #f06292 !important;
+    }
+    
+    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) ให้เป็นสีพาสเทล */
+    span[data-baseweb="tag"] {
+        background-color: #fce4ec !important; /* พื้นหลังชมพูพาสเทลอ่อน */
+        color: #d81b60 !important; /* ตัวหนังสือสีชมพูเข้ม */
+        border: 1px solid #f48fb1 !important; /* ขอบสีชมพู */
+    }
+    /* สีไอคอนกากบาท (X) ในตัวเลือก */
+    span[data-baseweb="tag"] svg {
+        fill: #d81b60 !important; 
     }
     
     .stApp {
@@ -449,8 +460,7 @@ if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
 with st.sidebar:
-    st.markdown("### 🏫 ศูนย์ข้อมูลโรงเรียน")
-    st.markdown("<small style='color:#f48fb1;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
+    st.markdown("### 🏢 Vieng Center")
     st.divider()
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
@@ -516,7 +526,7 @@ if process_btn:
 # Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
 
-st.markdown("##### 🏠 ระบบบัญชีสถานศึกษา > ทะเบียนรับเงิน")
+st.markdown("##### 🏠 Vieng Center > ทะเบียนรับเงิน")
 st.markdown(f"<span style='font-size:14px; color:#90a4ae;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
