@@ -654,9 +654,45 @@ else:
     # ------------------ TAB: Table & Print ------------------
     with tab_table:
         st.markdown("<br>", unsafe_allow_html=True)
-        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
-        df_display = df[display_cols]
+        st.markdown("##### คัดกรองข้อมูลสำหรับออกใบเสร็จ")
         
+        # ฟังก์ชันกรองใหม่สำหรับแท็บออกใบเสร็จ
+        filter2_col1, filter2_col2, filter2_col3 = st.columns(3)
+        
+        gender_list2 = sorted(list(df['เพศ'].unique()))
+        selected_gender2 = filter2_col1.multiselect("คัดกรองเพศ:", options=gender_list2, default=gender_list2, key="g2")
+        
+        grade_list2 = sorted(list(df['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
+        selected_grade2 = filter2_col2.multiselect("คัดกรองระดับชั้น:", options=grade_list2, default=grade_list2, key="gr2")
+        
+        date_list2 = sorted(list(df['วันที่จ่ายเงิน'].unique()))
+        selected_date2 = filter2_col3.multiselect("คัดกรองวันที่จ่ายเงิน:", options=date_list2, default=date_list2, key="dt2")
+        
+        df_filtered_table = df.copy()
+        
+        # นำตัวกรองมาใช้งาน
+        if selected_gender2:
+            df_filtered_table = df_filtered_table[df_filtered_table['เพศ'].isin(selected_gender2)]
+        else:
+            df_filtered_table = df_filtered_table[df_filtered_table['เพศ'].isin([])]
+            
+        if selected_grade2:
+            df_filtered_table = df_filtered_table[df_filtered_table['พนักงานขาย (ระดับชั้นย่อย)'].isin(selected_grade2)]
+        else:
+            df_filtered_table = df_filtered_table[df_filtered_table['พนักงานขาย (ระดับชั้นย่อย)'].isin([])]
+            
+        if selected_date2:
+            df_filtered_table = df_filtered_table[df_filtered_table['วันที่จ่ายเงิน'].isin(selected_date2)]
+        else:
+            df_filtered_table = df_filtered_table[df_filtered_table['วันที่จ่ายเงิน'].isin([])]
+
+        # แยกตารางที่จะใช้สร้าง PDF (เฉพาะคนที่มียอดจ่ายเงิน)
+        df_paid_filtered = df_filtered_table[df_filtered_table['ยอดที่จ่าย (บาท)'] > 0].copy()
+        
+        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
+        df_display = df_filtered_table[display_cols]
+        
+        st.divider()
         act_col1, act_col2 = st.columns(2)
         with act_col1:
             output_excel = io.BytesIO()
@@ -671,19 +707,21 @@ else:
             )
             
         with act_col2:
-            if not df_paid.empty:
+            if not df_paid_filtered.empty:
                 if not has_font:
                     st.warning("ไม่พบฟอนต์ THSarabunNew.ttf")
                 else:
-                    pdf_packet = create_receipts_pdf(df_paid)
+                    pdf_packet = create_receipts_pdf(df_paid_filtered)
                     st.download_button(
-                        label=f"พิมพ์ใบเสร็จทั้งหมด ({len(df_paid)} ใบ)", 
+                        label=f"พิมพ์ใบเสร็จทั้งหมด ({len(df_paid_filtered)} ใบ)", 
                         data=pdf_packet, 
                         file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", 
                         mime="application/pdf",
                         use_container_width=True,
                         type="primary"
                     )
+            else:
+                st.info("ไม่มีข้อมูลผู้ชำระเงินตามเงื่อนไขที่เลือก")
         
         st.markdown("<br>", unsafe_allow_html=True)
         def highlight_paid(row):
