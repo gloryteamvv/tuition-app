@@ -49,6 +49,7 @@ st.markdown("""
     .stApp {
         background-color: #f4f6f9;
     }
+    header {visibility: hidden;}
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
@@ -500,7 +501,6 @@ if process_btn:
                 
         all_data.extend(list(csv_dict.values()))
         
-        # ตรวจสอบว่ามีข้อมูลหรือไม่
         if len(all_data) > 0:
             st.session_state['processed_data'] = all_data
             st.sidebar.success(f"✅ ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
@@ -561,23 +561,26 @@ else:
         
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # แบ่ง Tabs (ภาพรวม / ทะเบียน)
     tab_dashboard, tab_table = st.tabs(["📊 ภาพรวม (Dashboard)", "📄 ทะเบียนรับเงิน (ออกใบเสร็จ)"])
     
     # ------------------ TAB: Dashboard ------------------
     with tab_dashboard:
         st.markdown("<br>", unsafe_allow_html=True)
         
-        filter_col1, filter_col2 = st.columns(2)
+        # เปลี่ยน Dropdown เป็น Checkbox แนวนอน (Radio)
         gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
-        selected_gender = filter_col1.selectbox("คัดกรองเพศ:", gender_list)
+        selected_gender = st.radio("👦👧 คัดกรองเพศ:", gender_list, horizontal=True)
+        
+        st.write("") # เว้นบรรทัด
         
         grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
-        selected_grade = filter_col2.selectbox("คัดกรองระดับชั้น:", grade_list)
+        selected_grade = st.radio("📚 คัดกรองระดับชั้น:", grade_list, horizontal=True)
         
         df_filtered = df_paid.copy()
-        if selected_gender != 'ทั้งหมด': df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
-        if selected_grade != 'ทั้งหมด': df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
+        if selected_gender != 'ทั้งหมด': 
+            df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
+        if selected_grade != 'ทั้งหมด': 
+            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
             
         st.divider()
         chart_col, table_col = st.columns([1.2, 1])
@@ -585,6 +588,7 @@ else:
         with chart_col:
             st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
             if len(df_filtered) > 0:
+                # ระบบสลับกราฟอัตโนมัติตามตัวเลือก
                 if selected_grade != 'ทั้งหมด' and selected_gender == 'ทั้งหมด':
                     summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('เพศ'))
@@ -662,4 +666,3 @@ else:
         """, unsafe_allow_html=True)
         
         st.dataframe(styled_df, use_container_width=True, height=500)
-        
