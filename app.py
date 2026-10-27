@@ -56,15 +56,21 @@ st.markdown("""
         background-color: #f06292 !important;
     }
     
-    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) ให้เป็นสีพาสเทล */
-    span[data-baseweb="tag"] {
+    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) ให้เป็นสีพาสเทล บังคับทับสีเดิม */
+    div[data-baseweb="select"] span[data-baseweb="tag"] {
         background-color: #fce4ec !important; /* พื้นหลังชมพูพาสเทลอ่อน */
         color: #d81b60 !important; /* ตัวหนังสือสีชมพูเข้ม */
         border: 1px solid #f48fb1 !important; /* ขอบสีชมพู */
     }
+    div[data-baseweb="select"] span[data-baseweb="tag"] span {
+        color: #d81b60 !important; 
+    }
     /* สีไอคอนกากบาท (X) ในตัวเลือก */
-    span[data-baseweb="tag"] svg {
+    div[data-baseweb="select"] span[data-baseweb="tag"] svg {
         fill: #d81b60 !important; 
+    }
+    div[data-baseweb="select"] span[data-baseweb="tag"] div[role="button"]:hover {
+        background-color: #f8bbd0 !important; /* สีตอนเอาเมาส์ชี้กากบาท */
     }
     
     .stApp {
