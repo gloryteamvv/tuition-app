@@ -20,49 +20,100 @@ from bahttext import bahttext
 st.set_page_config(page_title="ระบบบัญชีสถานศึกษา - สรุปยอดค่าเทอม", page_icon="🏫", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# Custom CSS ปรับแต่ง UI ลดขนาดหัวข้อและปรับสัดส่วน
+# Custom CSS ปรับแต่ง UI ธีม "เขียว-ชมพู"
 # ==========================================
 st.markdown("""
 <style>
-    h1 { font-size: 26px !important; margin-bottom: 10px !important; }
-    h2 { font-size: 22px !important; }
+    /* ลดขนาดหัวข้อ (Headings) และเปลี่ยนสีให้เข้าธีม */
+    h1 { font-size: 26px !important; margin-bottom: 10px !important; color: #2d6a4f !important; }
+    h2 { font-size: 22px !important; color: #d81b60 !important; }
     h3 { font-size: 18px !important; }
-    h4 { font-size: 16px !important; }
-    h5 { font-size: 15px !important; }
+    h4 { font-size: 16px !important; color: #2d6a4f !important; }
+    h5 { font-size: 15px !important; color: #d81b60 !important; }
     
-    [data-testid="stSidebar"] { background-color: #122345; color: white; }
-    [data-testid="stSidebar"] * { color: #e6e9ef !important; font-size: 14px; }
-    [data-testid="stSidebar"] button * { font-size: 16px !important; font-weight: bold; }
-    
-    .stApp { background-color: #f4f6f9; }
-    header { visibility: hidden; }
-    
-    .kpi-card {
-        background-color: white; border-radius: 8px; padding: 15px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e0e4e8;
-        border-left: 5px solid #3b82f6; margin-bottom: 15px;
+    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - ธีมสีเขียวเข้ม */
+    [data-testid="stSidebar"] {
+        background-color: #1e5631;
+        color: white;
     }
-    .kpi-card.green { border-left-color: #10b981; }
-    .kpi-card.purple { border-left-color: #8b5cf6; }
-    .kpi-card.orange { border-left-color: #f59e0b; }
+    [data-testid="stSidebar"] * {
+        color: #e8f5e9 !important;
+        font-size: 14px;
+    }
+    [data-testid="stSidebar"] button * {
+        font-size: 16px !important;
+        font-weight: bold;
+    }
+    button[kind="primary"] {
+        background-color: #d81b60 !important;
+        border-color: #d81b60 !important;
+        color: white !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #c2185b !important;
+    }
     
-    .kpi-title { font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
-    .kpi-value { font-size: 24px; font-weight: bold; color: #0f172a; }
-    .kpi-unit { font-size: 13px; color: #94a3b8; font-weight: normal; }
+    .stApp {
+        background-color: #fdfbfb;
+    }
+    header {visibility: hidden;}
     
+    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) ธีมเขียว-ชมพู */
+    .kpi-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e0e4e8;
+        border-left: 5px solid #2d6a4f;
+        margin-bottom: 15px;
+    }
+    .kpi-card.green { border-left-color: #4ade80; }
+    .kpi-card.pink { border-left-color: #d81b60; }
+    .kpi-card.lightpink { border-left-color: #f472b6; }
+    
+    .kpi-title {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    .kpi-value {
+        font-size: 24px; 
+        font-weight: bold;
+        color: #1e5631;
+    }
+    .kpi-unit {
+        font-size: 13px;
+        color: #d81b60;
+        font-weight: normal;
+    }
+    
+    /* ปรับแต่งขนาดแท็บ (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 5px; background-color: white; padding: 5px 10px 0 10px;
-        border-radius: 8px 8px 0 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        gap: 5px;
+        background-color: white;
+        padding: 5px 10px 0 10px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .stTabs [data-baseweb="tab"] {
-        height: 45px; background-color: #f8fafc; border-radius: 4px 4px 0 0;
-        color: #475569; font-weight: 600; font-size: 14px; padding: 0 15px;
-        border: 1px solid #e2e8f0; border-bottom: none;
+        height: 45px;
+        background-color: #f8fafc;
+        border-radius: 4px 4px 0 0;
+        color: #475569;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 0 15px;
+        border: 1px solid #e2e8f0;
+        border-bottom: none;
     }
-    .stTabs [aria-selected="true"] { background-color: #1e3a8a !important; color: white !important; }
+    .stTabs [aria-selected="true"] {
+        background-color: #d81b60 !important; 
+        color: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
-
 
 # ==========================================
 # ลงทะเบียนฟอนต์ภาษาไทยสำหรับ PDF
@@ -74,37 +125,61 @@ if os.path.exists(font_path):
     has_font = True
 
 # ==========================================
-# ฟังก์ชันตัวช่วย
+# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อ และแยกหมวดหมู่)
 # ==========================================
 def clean_name_th(name):
     n = str(name).replace(' ', '').strip()
     prefixes = ['ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'นาย', 'นาง', 'นางสาว']
     for p in prefixes:
-        if n.startswith(p): n = n[len(p):]
+        if n.startswith(p):
+            n = n[len(p):]
     return n
 
 def extract_gender(name, title_from_form=""):
     if title_from_form:
         if 'ชาย' in str(title_from_form) or 'ด.ช.' in str(title_from_form): return 'ชาย'
         if 'หญิง' in str(title_from_form) or 'ด.ญ.' in str(title_from_form): return 'หญิง'
+    
     n = str(name).replace(' ', '').strip()
     if n.startswith('ด.ช.') or n.startswith('เด็กชาย') or n.startswith('นาย'): return 'ชาย'
     if n.startswith('ด.ญ.') or n.startswith('เด็กหญิง') or n.startswith('นาง'): return 'หญิง'
     return 'ไม่ระบุ'
 
 def get_grade_info(raw_grade):
+    # ลบช่องว่างทั้งหมดออกก่อนนำไปเช็ค เพื่อแก้ปัญหาพิมพ์เว้นวรรค เช่น "ประถมศึกษา ปีที่ 6"
+    clean_raw = str(raw_grade).replace(' ', '').strip()
+    
     mapping = {
-        'ปถ1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'), 'ปถ2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ปถ3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'), 'ปถ4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ปถ5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'), 'ปถ6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
-        'อบ1': ('อนุบาล', 'อนุบาล 1'), 'อบ2': ('อนุบาล', 'อนุบาล 2'), 'อบ3': ('อนุบาล', 'อนุบาล 3'),
-        'อนุบาล 1': ('อนุบาล', 'อนุบาล 1'), 'อนุบาล 2': ('อนุบาล', 'อนุบาล 2'), 'อนุบาล 3': ('อนุบาล', 'อนุบาล 3'),
-        'ประถมศึกษาปีที่ 1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'), 'ประถมศึกษาปีที่ 2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ประถมศึกษาปีที่ 3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'), 'ประถมศึกษาปีที่ 4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ประถมศึกษาปีที่ 5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'), 'ประถมศึกษาปีที่ 6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
+        'ปถ1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
+        'ปถ2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
+        'ปถ3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
+        'ปถ4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
+        'ปถ5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
+        'ปถ6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
+        'ป.1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
+        'ป.2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
+        'ป.3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
+        'ป.4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
+        'ป.5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
+        'ป.6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
+        'อบ1': ('อนุบาล', 'อนุบาล 1'),
+        'อบ2': ('อนุบาล', 'อนุบาล 2'),
+        'อบ3': ('อนุบาล', 'อนุบาล 3'),
+        'อ.1': ('อนุบาล', 'อนุบาล 1'),
+        'อ.2': ('อนุบาล', 'อนุบาล 2'),
+        'อ.3': ('อนุบาล', 'อนุบาล 3'),
+        'อนุบาล1': ('อนุบาล', 'อนุบาล 1'),
+        'อนุบาล2': ('อนุบาล', 'อนุบาล 2'),
+        'อนุบาล3': ('อนุบาล', 'อนุบาล 3'),
+        'ประถมศึกษาปีที่1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
+        'ประถมศึกษาปีที่2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
+        'ประถมศึกษาปีที่3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
+        'ประถมศึกษาปีที่4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
+        'ประถมศึกษาปีที่5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
+        'ประถมศึกษาปีที่6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
     }
-    clean_raw = str(raw_grade).strip()
-    return mapping.get(clean_raw, ('ไม่ระบุ', clean_raw))
+    
+    return mapping.get(clean_raw, ('ไม่ระบุ', str(raw_grade).strip()))
 
 # ==========================================
 # ฟังก์ชันสร้าง PDF
@@ -112,7 +187,11 @@ def get_grade_info(raw_grade):
 def create_receipts_pdf(df_paid):
     packet = io.BytesIO()
     c = canvas.Canvas(packet, pagesize=landscape(A4))
-    font_name = 'THSarabun' if has_font else 'Helvetica'
+    
+    if has_font:
+        font_name = 'THSarabun'
+    else:
+        font_name = 'Helvetica'
     
     for idx, row in df_paid.iterrows():
         student_code = row['รหัสนักเรียน']
@@ -122,6 +201,7 @@ def create_receipts_pdf(df_paid):
         pay_date = row.get('วันที่จ่ายเงิน', '') 
         total_amount = row['ยอดที่จ่าย (บาท)']
         amount_text = bahttext(total_amount)
+        
         today_str = str(pay_date)
         
         invoices = row.get('รายการบิล', [])
@@ -145,23 +225,29 @@ def create_receipts_pdf(df_paid):
         
         c.setFont(font_name, 16)
         left_label, left_colon, left_val = 2 * cm, 5 * cm, 5.3 * cm
+        
         c.drawString(left_label, 13.5*cm, "ลูกค้า (รหัสลูกค้า)")
         c.drawString(left_colon, 13.5*cm, ":")
         c.drawString(left_val, 13.5*cm, f"{student_code}")
+        
         c.drawString(left_label, 12.8*cm, "ชื่อ-สกุล")
         c.drawString(left_colon, 12.8*cm, ":")
         c.drawString(left_val, 12.8*cm, f"{student_name}")
+        
         c.drawString(left_label, 12.1*cm, "ที่อยู่")
         c.drawString(left_colon, 12.1*cm, ":")
         c.drawString(left_val, 12.1*cm, "........................................................................")
         
         right_label, right_colon, right_val = 16.5 * cm, 19 * cm, 19.3 * cm
+        
         c.drawString(right_label, 13.5*cm, "เลขที่ใบเสร็จ")
         c.drawString(right_colon, 13.5*cm, ":")
         c.drawString(right_val, 13.5*cm, f"{receipt_no}")
+        
         c.drawString(right_label, 12.8*cm, "วันที่")
         c.drawString(right_colon, 12.8*cm, ":")
         c.drawString(right_val, 12.8*cm, f"{today_str}")
+        
         c.drawString(right_label, 12.1*cm, "พนักงานขาย")
         c.drawString(right_colon, 12.1*cm, ":")
         c.drawString(right_val, 12.1*cm, f"{salesperson}")
@@ -176,6 +262,7 @@ def create_receipts_pdf(df_paid):
         
         c.setFillColor(colors.HexColor('#333333'))
         c.rect(2*cm, table_top-1*cm, 25.5*cm, 1*cm, fill=1, stroke=1)
+        
         c.setFillColor(colors.black)
         c.setLineWidth(1)
         c.rect(2*cm, table_bottom, 25.5*cm, table_height) 
@@ -239,6 +326,7 @@ def create_receipts_pdf(df_paid):
     packet.seek(0)
     return packet
 
+
 # --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
 @st.cache_data(ttl=60)
 def pull_google_sheet_data(sheet_url):
@@ -283,7 +371,7 @@ def pull_google_sheet_data(sheet_url):
                         })
             except Exception: continue
     except Exception as e:
-        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้")
+        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
@@ -365,6 +453,7 @@ def process_csv(file):
             except Exception: pass
     return results
 
+
 # ==========================================
 # Layout : Sidebar (เมนูด้านซ้าย)
 # ==========================================
@@ -373,7 +462,7 @@ if 'processed_data' not in st.session_state:
 
 with st.sidebar:
     st.markdown("### 🏫 ศูนย์ข้อมูลโรงเรียน")
-    st.markdown("<small style='color:#94a3b8;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color:#e8f5e9;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
@@ -386,6 +475,7 @@ with st.sidebar:
     
     st.divider()
     process_btn = st.button("🚀 ประมวลผลข้อมูล", use_container_width=True, type="primary")
+
 
 # ==========================================
 # โลจิกประมวลผล (เมื่อกดปุ่ม)
@@ -439,7 +529,7 @@ if process_btn:
 # ==========================================
 
 st.markdown("##### 🏠 ระบบบัญชีสถานศึกษา > ทะเบียนรับเงิน")
-st.markdown(f"<span style='font-size:14px;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='font-size:14px; color:#2d6a4f;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
@@ -456,28 +546,28 @@ else:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
-        <div class="kpi-card green">
+        <div class="kpi-card">
             <div class="kpi-title">💵 ยอดรับชำระรวมทั้งหมด</div>
             <div class="kpi-value">{total_revenue:,.2f} <span class="kpi-unit">บาท</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi-card green">
             <div class="kpi-title">👥 นักเรียนที่ชำระแล้ว</div>
             <div class="kpi-value">{total_students_paid} <span class="kpi-unit">คน</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
-        <div class="kpi-card purple">
+        <div class="kpi-card pink">
             <div class="kpi-title">📱 โอนผ่านออนไลน์ (Form)</div>
             <div class="kpi-value">{online_count} <span class="kpi-unit">รายการ</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
-        <div class="kpi-card orange">
+        <div class="kpi-card lightpink">
             <div class="kpi-title">🏫 เงินสด/เช็ค (Express)</div>
             <div class="kpi-value">{express_count} <span class="kpi-unit">รายการ</span></div>
         </div>
@@ -521,14 +611,14 @@ else:
                 filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
                 filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
                 
-                # ลอจิกใหม่: ถ้ามีการกรองข้อมูล (เพศ หรือ ระดับชั้น) กราฟจะแสดงเป็นยอดแบ่งตาม "ระดับชั้นย่อย (อ.1 - ป.6)" เสมอ
+                # ถ้ามีการเลือกเพศ หรือ เลือกระดับชั้น กราฟจะแสดงแจกแจงตามระดับชั้นย่อยเสมอ
                 if filtered_grade or filtered_gender:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'), color="#d81b60")
                 else:
-                    # ถ้าไม่ได้กรองอะไรเลย (แสดงค่าเริ่มต้นทั้งหมด) จะแสดงกราฟรวมกลุ่มช่วงชั้น (อนุบาล/ประถม)
+                    # ถ้าไม่ได้กรองอะไรเลย (แสดงทั้งหมด)
                     summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'), color="#2d6a4f")
             else:
                 st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
                 
@@ -579,18 +669,12 @@ else:
             colors = [''] * len(row)
             if row['ยอดที่จ่าย (บาท)'] > 0:
                 idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
-                colors[idx_paid] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
+                colors[idx_paid] = 'background-color: #dcfce7; color: #166534; font-weight: bold;'
             return colors
             
         styled_df = df_display.style.apply(highlight_paid, axis=1).format({
             'ยอดที่จ่าย (บาท)': '{:,.2f}', 
             'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
         })
-        
-        st.markdown("""
-        <style>
-            [data-testid="stDataFrame"] { border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        </style>
-        """, unsafe_allow_html=True)
         
         st.dataframe(styled_df, use_container_width=True, height=500)
