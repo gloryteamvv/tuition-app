@@ -20,72 +20,76 @@ from bahttext import bahttext
 st.set_page_config(page_title="ระบบบัญชีสถานศึกษา - สรุปยอดค่าเทอม", page_icon="🏫", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# Custom CSS ปรับแต่ง UI ธีม "เขียว-ชมพู"
+# Custom CSS ปรับแต่ง UI ธีม "พาสเทล (Pastel)"
 # ==========================================
 st.markdown("""
 <style>
-    /* ลดขนาดหัวข้อ (Headings) และเปลี่ยนสีให้เข้าธีม */
-    h1 { font-size: 26px !important; margin-bottom: 10px !important; color: #2d6a4f !important; }
-    h2 { font-size: 22px !important; color: #d81b60 !important; }
-    h3 { font-size: 18px !important; }
-    h4 { font-size: 16px !important; color: #2d6a4f !important; }
-    h5 { font-size: 15px !important; color: #d81b60 !important; }
+    /* ลดขนาดหัวข้อ (Headings) และเปลี่ยนสีโทนพาสเทล */
+    h1 { font-size: 26px !important; margin-bottom: 10px !important; color: #546e7a !important; }
+    h2 { font-size: 22px !important; color: #f48fb1 !important; } 
+    h3 { font-size: 18px !important; color: #546e7a !important; }
+    h4 { font-size: 16px !important; color: #546e7a !important; }
+    h5 { font-size: 15px !important; color: #f48fb1 !important; }
     
-    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - ธีมสีเขียวเข้ม */
+    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - สีชมพูพาสเทลอ่อน */
     [data-testid="stSidebar"] {
-        background-color: #1e5631;
-        color: white;
+        background-color: #fce4ec; 
     }
     [data-testid="stSidebar"] * {
-        color: #e8f5e9 !important;
+        color: #475569 !important; /* สีเทาเข้มให้อ่านง่าย */
         font-size: 14px;
+    }
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
+        color: #d81b60 !important;
     }
     [data-testid="stSidebar"] button * {
         font-size: 16px !important;
         font-weight: bold;
     }
+    /* ปุ่ม Primary สีชมพูพาสเทล */
     button[kind="primary"] {
-        background-color: #d81b60 !important;
-        border-color: #d81b60 !important;
+        background-color: #f48fb1 !important;
+        border-color: #f48fb1 !important;
         color: white !important;
     }
     button[kind="primary"]:hover {
-        background-color: #c2185b !important;
+        background-color: #f06292 !important;
     }
     
     .stApp {
-        background-color: #fdfbfb;
+        background-color: #fafafa;
     }
     header {visibility: hidden;}
     
-    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) ธีมเขียว-ชมพู */
+    /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) ธีมพาสเทล */
     .kpi-card {
         background-color: white;
         border-radius: 8px;
         padding: 15px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e0e4e8;
-        border-left: 5px solid #2d6a4f;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border: 1px solid #f0f0f0;
+        border-left: 5px solid #a5d6a7; /* สีหลัก เขียวพาสเทล */
         margin-bottom: 15px;
     }
-    .kpi-card.green { border-left-color: #4ade80; }
-    .kpi-card.pink { border-left-color: #d81b60; }
-    .kpi-card.lightpink { border-left-color: #f472b6; }
+    .kpi-card.green { border-left-color: #a5d6a7; } /* เขียวพาสเทล */
+    .kpi-card.blue { border-left-color: #90caf9; } /* ฟ้าพาสเทล */
+    .kpi-card.purple { border-left-color: #ce93d8; } /* ม่วงพาสเทล */
+    .kpi-card.orange { border-left-color: #ffcc80; } /* ส้มพาสเทล */
     
     .kpi-title {
         font-size: 13px;
-        color: #64748b;
+        color: #90a4ae;
         margin-bottom: 5px;
         font-weight: 600;
     }
     .kpi-value {
         font-size: 24px; 
         font-weight: bold;
-        color: #1e5631;
+        color: #455a64; 
     }
     .kpi-unit {
         font-size: 13px;
-        color: #d81b60;
+        color: #f48fb1; 
         font-weight: normal;
     }
     
@@ -95,25 +99,26 @@ st.markdown("""
         background-color: white;
         padding: 5px 10px 0 10px;
         border-radius: 8px 8px 0 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
     .stTabs [data-baseweb="tab"] {
         height: 45px;
-        background-color: #f8fafc;
+        background-color: #fefefe;
         border-radius: 4px 4px 0 0;
-        color: #475569;
+        color: #94a3b8;
         font-weight: 600;
         font-size: 14px;
         padding: 0 15px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #f1f5f9;
         border-bottom: none;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #d81b60 !important; 
+        background-color: #f48fb1 !important; /* ชมพูพาสเทล */
         color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ==========================================
 # ลงทะเบียนฟอนต์ภาษาไทยสำหรับ PDF
@@ -125,7 +130,7 @@ if os.path.exists(font_path):
     has_font = True
 
 # ==========================================
-# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อ และแยกหมวดหมู่)
+# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อ และแยกหมวดหมู่แบบชาญฉลาด)
 # ==========================================
 def clean_name_th(name):
     n = str(name).replace(' ', '').strip()
@@ -146,40 +151,23 @@ def extract_gender(name, title_from_form=""):
     return 'ไม่ระบุ'
 
 def get_grade_info(raw_grade):
-    # ลบช่องว่างทั้งหมดออกก่อนนำไปเช็ค เพื่อแก้ปัญหาพิมพ์เว้นวรรค เช่น "ประถมศึกษา ปีที่ 6"
+    # ลบช่องว่างทั้งหมดออกก่อนตรวจสอบ ทำให้จับคู่ได้แม่นยำ 100% ไม่ว่าจะพิมพ์เว้นวรรคแบบไหน
     clean_raw = str(raw_grade).replace(' ', '').strip()
     
-    mapping = {
-        'ปถ1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
-        'ปถ2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ปถ3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
-        'ปถ4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ปถ5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
-        'ปถ6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
-        'ป.1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
-        'ป.2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ป.3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
-        'ป.4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ป.5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
-        'ป.6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
-        'อบ1': ('อนุบาล', 'อนุบาล 1'),
-        'อบ2': ('อนุบาล', 'อนุบาล 2'),
-        'อบ3': ('อนุบาล', 'อนุบาล 3'),
-        'อ.1': ('อนุบาล', 'อนุบาล 1'),
-        'อ.2': ('อนุบาล', 'อนุบาล 2'),
-        'อ.3': ('อนุบาล', 'อนุบาล 3'),
-        'อนุบาล1': ('อนุบาล', 'อนุบาล 1'),
-        'อนุบาล2': ('อนุบาล', 'อนุบาล 2'),
-        'อนุบาล3': ('อนุบาล', 'อนุบาล 3'),
-        'ประถมศึกษาปีที่1': ('ประถมต้น', 'ประถมศึกษาปีที่ 1'),
-        'ประถมศึกษาปีที่2': ('ประถมต้น', 'ประถมศึกษาปีที่ 2'),
-        'ประถมศึกษาปีที่3': ('ประถมต้น', 'ประถมศึกษาปีที่ 3'),
-        'ประถมศึกษาปีที่4': ('ประถมปลาย', 'ประถมศึกษาปีที่ 4'),
-        'ประถมศึกษาปีที่5': ('ประถมปลาย', 'ประถมศึกษาปีที่ 5'),
-        'ประถมศึกษาปีที่6': ('ประถมปลาย', 'ประถมศึกษาปีที่ 6'),
-    }
+    # ตรวจสอบประถม
+    if '1' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 1')
+    if '2' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 2')
+    if '3' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 3')
+    if '4' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 4')
+    if '5' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 5')
+    if '6' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 6')
     
-    return mapping.get(clean_raw, ('ไม่ระบุ', str(raw_grade).strip()))
+    # ตรวจสอบอนุบาล
+    if '1' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 1')
+    if '2' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 2')
+    if '3' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 3')
+    
+    return ('ไม่ระบุ', str(raw_grade).strip())
 
 # ==========================================
 # ฟังก์ชันสร้าง PDF
@@ -462,7 +450,7 @@ if 'processed_data' not in st.session_state:
 
 with st.sidebar:
     st.markdown("### 🏫 ศูนย์ข้อมูลโรงเรียน")
-    st.markdown("<small style='color:#e8f5e9;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color:#f48fb1;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
@@ -529,7 +517,7 @@ if process_btn:
 # ==========================================
 
 st.markdown("##### 🏠 ระบบบัญชีสถานศึกษา > ทะเบียนรับเงิน")
-st.markdown(f"<span style='font-size:14px; color:#2d6a4f;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='font-size:14px; color:#90a4ae;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
@@ -546,28 +534,28 @@ else:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
-        <div class="kpi-card">
+        <div class="kpi-card green">
             <div class="kpi-title">💵 ยอดรับชำระรวมทั้งหมด</div>
             <div class="kpi-value">{total_revenue:,.2f} <span class="kpi-unit">บาท</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
-        <div class="kpi-card green">
+        <div class="kpi-card blue">
             <div class="kpi-title">👥 นักเรียนที่ชำระแล้ว</div>
             <div class="kpi-value">{total_students_paid} <span class="kpi-unit">คน</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
-        <div class="kpi-card pink">
+        <div class="kpi-card purple">
             <div class="kpi-title">📱 โอนผ่านออนไลน์ (Form)</div>
             <div class="kpi-value">{online_count} <span class="kpi-unit">รายการ</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
-        <div class="kpi-card lightpink">
+        <div class="kpi-card orange">
             <div class="kpi-title">🏫 เงินสด/เช็ค (Express)</div>
             <div class="kpi-value">{express_count} <span class="kpi-unit">รายการ</span></div>
         </div>
@@ -611,14 +599,12 @@ else:
                 filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
                 filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
                 
-                # ถ้ามีการเลือกเพศ หรือ เลือกระดับชั้น กราฟจะแสดงแจกแจงตามระดับชั้นย่อยเสมอ
                 if filtered_grade or filtered_gender:
                     summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'), color="#d81b60")
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'), color="#f48fb1") # ชมพูพาสเทล
                 else:
-                    # ถ้าไม่ได้กรองอะไรเลย (แสดงทั้งหมด)
                     summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'), color="#2d6a4f")
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'), color="#a5d6a7") # เขียวพาสเทล
             else:
                 st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
                 
@@ -669,7 +655,7 @@ else:
             colors = [''] * len(row)
             if row['ยอดที่จ่าย (บาท)'] > 0:
                 idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
-                colors[idx_paid] = 'background-color: #dcfce7; color: #166534; font-weight: bold;'
+                colors[idx_paid] = 'background-color: #e8f5e9; color: #2e7d32; font-weight: bold;' # ไฮไลต์เขียวพาสเทล
             return colors
             
         styled_df = df_display.style.apply(highlight_paid, axis=1).format({
