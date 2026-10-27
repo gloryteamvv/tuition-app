@@ -4,6 +4,7 @@ import csv
 import io
 import datetime
 import os
+import re
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
@@ -100,17 +101,25 @@ def create_receipts_pdf(df_paid):
         c.drawString(right_val, 12.1*cm, f"{salesperson}")
         
         # --- ตารางรายการ ---
-        table_top = 11*cm
-        # ขยับเส้นขอบล่างตารางขึ้นมาจาก 6cm เป็น 8cm
-        table_bottom = 8*cm
+        table_top = 11 * cm
+        row_height = 0.8 * cm 
+        
+        num_rows = len(invoices)
+        if num_rows > 1: 
+            num_rows += 1 
+            
+        table_height = (num_rows * row_height) + 0.5 * cm
+        if table_height < 2 * cm: 
+            table_height = 2 * cm 
+            
+        table_bottom = table_top - table_height
         
         c.setFillColor(colors.HexColor('#333333'))
         c.rect(2*cm, table_top-1*cm, 25.5*cm, 1*cm, fill=1, stroke=1)
         
         c.setFillColor(colors.black)
         c.setLineWidth(1)
-        # วาดกรอบตารางใหม่ให้พอดีกับที่ขยับขึ้น
-        c.rect(2*cm, table_bottom, 25.5*cm, table_top-table_bottom) 
+        c.rect(2*cm, table_bottom, 25.5*cm, table_height) 
         
         col_x = [2*cm, 3.5*cm, 7.5*cm, 11.5*cm, 14.5*cm, 17.5*cm, 21.5*cm, 24.5*cm, 27.5*cm]
         
@@ -146,26 +155,34 @@ def create_receipts_pdf(df_paid):
             c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{inv['remain']:,.2f}")
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{inv['paid']:,.2f}")
             
-            data_y -= 0.8 * cm 
+            data_y -= row_height 
             
         if len(invoices) > 1:
             c.setFont(font_name, 16)
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "รวมยอดชำระ")
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{total_amount:,.2f}")
         
-        # --- ส่วนสรุปยอดล่างสุด (ขยับขึ้น 2cm) ---
-        c.drawString(2.5*cm, 7*cm, f"({amount_text})")
-        c.drawString(22*cm, 7*cm, "รวมเป็นเงิน")
+        # --- ส่วนสรุปยอด ---
+        summary_y = table_bottom - 1 * cm
         
-        c.rect(24.5*cm, 6.5*cm, 3*cm, 1*cm)
-        c.drawCentredString((col_x[7]+col_x[8])/2, 6.8*cm, f"{total_amount:,.2f}")
+        c.drawString(2.5*cm, summary_y, f"({amount_text})")
+        c.drawString(22*cm, summary_y, "รวมเป็นเงิน")
         
-        # --- ท้ายบิล (ขยับขึ้น 2cm) ---
+        box_y = table_bottom - 1.5 * cm
+        c.rect(24.5*cm, box_y, 3*cm, 1*cm)
+        c.drawCentredString((col_x[7]+col_x[8])/2, box_y + 0.3*cm, f"{total_amount:,.2f}")
+        
+        # --- ท้ายบิล ---
+        footer_y1 = table_bottom - 2.5 * cm
+        footer_y2 = table_bottom - 3.5 * cm
+        footer_y3 = table_bottom - 4.5 * cm
+        footer_y4 = table_bottom - 5.3 * cm
+        
         c.setFont(font_name, 16)
-        c.drawString(2*cm, 5.5*cm, "การชำระเงินด้วยเช็คจะเสร็จสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
-        c.drawString(2*cm, 4.5*cm, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
-        c.drawString(2*cm, 3.5*cm, "ในนามโรงเรียนศิริมงคลศึกษา บางบัวทอง")
-        c.drawString(2*cm, 2.5*cm, "ผู้รับเงิน ........................................ วันที่ ......./......./.......      ผู้รับมอบอำนาจ ........................................")
+        c.drawString(2*cm, footer_y1, "การชำระเงินด้วยเช็คจะเสร็จสมบูรณ์เมื่อบริษัทได้รับเงินตามเช็คเรียบร้อย")
+        c.drawString(2*cm, footer_y2, "เงินสด ....................... เช็คธนาคาร ....................... เช็คเลขที่ ....................... ลงวันที่ ......./......./....... จำนวนเงิน .......................")
+        c.drawString(2*cm, footer_y3, "ในนามโรงเรียนศิริมงคลศึกษา บางบัวทอง")
+        c.drawString(2*cm, footer_y4, "ผู้รับเงิน ........................................ วันที่ ......./......./.......      ผู้รับมอบอำนาจ ........................................")
         
         c.showPage()
         
@@ -176,7 +193,7 @@ def create_receipts_pdf(df_paid):
 # ==========================================
 # หน้าจอหลัก
 # ==========================================
-st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (Express)")
+st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ")
 
 GRADE_MAP = {
     'ปถ1': 'ประถมศึกษาปีที่ 1',
@@ -190,6 +207,67 @@ GRADE_MAP = {
     'อบ3': 'อนุบาล 3'
 }
 
+# --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
+@st.cache_data(ttl=60) # ช่วยจำข้อมูล 60 วินาที เพื่อไม่ให้ดึงข้อมูลซ้ำซ้อนจนเครื่องช้า
+def pull_google_sheet_data(sheet_url):
+    results = []
+    try:
+        # สกัดหา ID ของ Sheet จากลิงก์
+        match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
+        if not match:
+            return []
+        
+        sheet_id = match.group(1)
+        # สร้างลิงก์ดึงข้อมูล CSV อัตโนมัติ (ต้องเปิดแชร์ลิงก์เป็นสาธารณะ)
+        csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+        
+        df_gs = pd.read_csv(csv_url)
+        
+        for idx, row in df_gs.iterrows():
+            try:
+                # ดึงยอดเงิน (อ้างอิงจากคอลัมน์ AX หรือ Index ที่ 49)
+                # เราใช้ try-except หรือตรวจสอบความยาวเพื่อความปลอดภัย
+                if len(row) > 49:
+                    amount_raw = str(row.iloc[49]).replace(',', '')
+                else:
+                    # ป้องกันกรณีฟอร์มสั้นลง หาคำว่า "ยอดเงิน"
+                    col_amount = [c for c in df_gs.columns if 'ยอดเงิน' in str(c)]
+                    amount_raw = str(row[col_amount[0]]).replace(',', '') if col_amount else "0"
+                
+                if amount_raw.replace('.','',1).isdigit():
+                    amount = float(amount_raw)
+                    if amount > 0:
+                        # ดึงข้อมูลนักเรียน (ชื่ออยู่คอลัมน์ F, นามสกุลคอลัมน์ G)
+                        first_name = str(row.iloc[5]).strip()
+                        last_name = str(row.iloc[6]).strip()
+                        full_name = f"{first_name} {last_name}"
+                        
+                        grade = str(row.iloc[7]).strip() # คอลัมน์ H ระดับชั้น
+                        timestamp = str(row.iloc[0]).split(' ')[0] # ประทับเวลา
+                        
+                        # สร้างประวัติการจ่าย
+                        results.append({
+                            'รหัสนักเรียน': '-', # Google Form ไม่ได้กรอกรหัส
+                            'ชื่อ-นามสกุล': full_name,
+                            'เอกสารอ้างอิง': 'Google Form',
+                            'วันที่จ่ายเงิน': timestamp, 
+                            'พนักงานขาย (ระดับชั้น)': grade, 
+                            'เลขที่ใบเสร็จ': 'โอนเงิน', 
+                            'ยอดค้างเดิม (บาท)': amount, # ถือว่ายอดบิลเท่ายอดโอน
+                            'ยอดที่จ่าย (บาท)': amount,
+                            'ยอดคงเหลือล่าสุด (บาท)': 0,
+                            'รายการบิล': [{'doc_no': 'Google Form', 'bill': amount, 'paid': amount, 'remain': 0}],
+                            'อ้างอิงไฟล์': 'Google Sheet API'
+                        })
+            except Exception:
+                continue
+                
+    except Exception as e:
+        st.error(f"⚠️ ไม่สามารถดึงข้อมูล Google Sheet ได้ (กรุณาเช็คว่าเปิดสิทธิ์การแชร์หรือยัง) รายละเอียด: {e}")
+        
+    return results
+
+# --- ฟังก์ชันอ่านไฟล์ CSV Express ---
 def process_csv(file):
     results = []
     try:
@@ -308,50 +386,69 @@ def process_csv(file):
                 
     return results
 
-uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์ CSV จาก Express", type=['csv'], accept_multiple_files=True)
+# ==========================================
+# การนำเข้าข้อมูล (UI)
+# ==========================================
 
-if st.button("ประมวลผลข้อมูล"):
+st.subheader("1️⃣ ข้อมูลจาก Google Form (สลิปโอนเงิน)")
+gsheet_url = st.text_input("ลิงก์ Google Sheet:", "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit")
+use_gsheet = st.checkbox("✅ ดึงข้อมูลอัตโนมัติจาก Google Form", value=True)
+
+st.divider()
+
+st.subheader("2️⃣ ข้อมูลจากโปรแกรม Express (จ่ายเงินสด/เช็ค)")
+uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์ CSV", type=['csv'], accept_multiple_files=True)
+
+if st.button("🚀 ประมวลผลข้อมูลและสร้างใบเสร็จ"):
+    all_data = []
+    
+    # 1. ดึงข้อมูล Google Sheet (ถ้าติ๊กถูก)
+    if use_gsheet and gsheet_url:
+        gsheet_data = pull_google_sheet_data(gsheet_url)
+        if gsheet_data:
+            all_data.extend(gsheet_data)
+            
+    # 2. ดึงข้อมูลจากไฟล์อัปโหลด
     if uploaded_files:
-        all_data = []
         for file in uploaded_files:
             all_data.extend(process_csv(file))
             
-        if all_data:
-            df = pd.DataFrame(all_data)
-            
-            display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
-            df_display = df[display_cols]
-            
-            df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
-            
-            def highlight_paid(row):
-                colors = [''] * len(row)
-                paid = row['ยอดที่จ่าย (บาท)']
-                if paid > 0:
-                    idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
-                    colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
-                return colors
+    if all_data:
+        df = pd.DataFrame(all_data)
+        
+        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'พนักงานขาย (ระดับชั้น)', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+        df_display = df[display_cols]
+        
+        df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
+        
+        def highlight_paid(row):
+            colors = [''] * len(row)
+            paid = row['ยอดที่จ่าย (บาท)']
+            if paid > 0:
+                idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
+                colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
+            return colors
 
-            st.success(f"✅ ประมวลผลเสร็จสิ้น! พบผู้ชำระเงิน {len(df_paid)} รายการ จากทั้งหมด {len(df)} รายการ")
+        st.success(f"✅ ประมวลผลเสร็จสิ้น! พบผู้ชำระเงิน {len(df_paid)} รายการ จากทั้งหมด {len(df)} รายการ")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            output_excel = io.BytesIO()
+            with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+                df_display.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
+            st.download_button("📥 1. ดาวน์โหลดตารางรวม (Excel)", data=output_excel.getvalue(), file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                output_excel = io.BytesIO()
-                with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                    df_display.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
-                st.download_button("📥 1. ดาวน์โหลดตารางรวม (Excel)", data=output_excel.getvalue(), file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with col2:
+            if not df_paid.empty:
+                if not has_font:
+                    st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ (ภาษาไทยใน PDF อาจไม่สมบูรณ์)")
                 
-            with col2:
-                if not df_paid.empty:
-                    if not has_font:
-                        st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ (ภาษาไทยใน PDF อาจไม่สมบูรณ์)")
-                    
-                    pdf_packet = create_receipts_pdf(df_paid)
-                    st.download_button(f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", data=pdf_packet, file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
-            
-            styled_df = df_display.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
-            st.dataframe(styled_df, use_container_width=True)
-            
-        else:
-            st.warning("ไม่พบข้อมูลลูกหนี้")
+                pdf_packet = create_receipts_pdf(df_paid)
+                st.download_button(f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", data=pdf_packet, file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
+        
+        styled_df = df_display.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
+        st.dataframe(styled_df, use_container_width=True)
+        
+    else:
+        st.warning("ไม่พบข้อมูลลูกหนี้ กรุณาอัปโหลดไฟล์หรือตรวจสอบลิงก์ Google Sheet")
