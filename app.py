@@ -44,12 +44,12 @@ st.markdown("""
     [data-testid="stSidebar"] button * {
         font-size: 16px !important;
         font-weight: bold;
+        color: white !important;
     }
     
     .stApp {
         background-color: #f4f6f9;
     }
-    header {visibility: hidden;}
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
@@ -571,7 +571,7 @@ else:
         st.markdown("##### 🔍 คัดกรองข้อมูล")
         filter_col1, filter_col2 = st.columns(2)
         
-        # เปลี่ยนเป็น Multiselect (Dropdown แบบมี Checkbox ให้เลือกหลายตัว)
+        # ใช้ Multiselect ให้ติ๊กเลือกได้หลายตัวเลือกพร้อมกัน
         gender_list = sorted(list(df_paid['เพศ'].unique()))
         selected_gender = filter_col1.multiselect("👦👧 คัดกรองเพศ (เลือกได้หลายตัวเลือก):", options=gender_list, default=gender_list)
         
@@ -580,16 +580,16 @@ else:
         
         df_filtered = df_paid.copy()
         
-        # กรองข้อมูลตามที่ติ๊กเลือก (ถ้าไม่เลือกอะไรเลย จะแสดงตารางว่าง)
+        # กรองข้อมูล
         if selected_gender:
             df_filtered = df_filtered[df_filtered['เพศ'].isin(selected_gender)]
         else:
-            df_filtered = df_filtered[df_filtered['เพศ'].isin([])] # ให้ตารางว่าง
+            df_filtered = df_filtered[df_filtered['เพศ'].isin([])]
             
         if selected_grade:
             df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'].isin(selected_grade)]
         else:
-            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'].isin([])] # ให้ตารางว่าง
+            df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'].isin([])]
             
         st.divider()
         chart_col, table_col = st.columns([1.2, 1])
@@ -597,7 +597,6 @@ else:
         with chart_col:
             st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
             if len(df_filtered) > 0:
-                # ระบบสลับกราฟอัตโนมัติตามตัวเลือกที่มีการกรอง
                 filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
                 filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
                 
