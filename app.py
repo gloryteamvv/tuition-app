@@ -14,7 +14,8 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 from bahttext import bahttext
 
-st.set_page_config(page_title="ระบบสรุปยอดค่าเทอม", layout="wide")
+# ตั้งค่าหน้าเพจให้กว้างและใส่ไอคอน
+st.set_page_config(page_title="ระบบสรุปยอดค่าเทอม", page_icon="🏫", layout="wide")
 
 # ==========================================
 # ลงทะเบียนฟอนต์ภาษาไทยสำหรับ PDF
@@ -431,102 +432,128 @@ def process_csv(file):
                 
     return results
 
-
 # ==========================================
 # หน้าจอหลัก (UI) และ Session State
 # ==========================================
-st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ (พร้อม Dashboard)")
+st.title("🏫 ระบบจัดการและสรุปยอดค่าธรรมเนียมการศึกษา")
+st.markdown("โปรแกรมสำหรับดึงข้อมูลชำระเงินจากแบบฟอร์มออนไลน์ และโปรแกรมบัญชี Express เพื่อสร้างใบเสร็จรับเงินอัตโนมัติ")
 
 if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
-st.subheader("1️⃣ ข้อมูลจาก Google Form (สลิปโอนเงิน)")
-# ฝังลิงก์ไว้ในระบบเบื้องหลัง และลบ text_input ออกเพื่อประหยัดพื้นที่
-gsheet_url = "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing"
-use_gsheet = st.checkbox("✅ เชื่อมต่อข้อมูลอัตโนมัติจาก Google Form เรียบร้อยแล้ว", value=True)
-
-st.divider()
-
-st.subheader("2️⃣ ข้อมูลจากโปรแกรม Express (จ่ายเงินสด/เช็ค)")
-uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์ CSV", type=['csv'], accept_multiple_files=True)
-
-if st.button("🚀 ประมวลผลข้อมูล"):
-    csv_data = []
+# --- ส่วนนำเข้าข้อมูลด้านซ้าย (Sidebar) ---
+with st.sidebar:
+    st.header("⚙️ นำเข้าข้อมูล")
     
-    if uploaded_files:
-        for file in uploaded_files:
-            csv_data.extend(process_csv(file))
+    st.subheader("1. การชำระเงินโอน (ออนไลน์)")
+    gsheet_url = "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing"
+    use_gsheet = st.checkbox("✅ เชื่อมต่อข้อมูลอัตโนมัติจาก Google Form", value=True)
+    
+    st.divider()
+    
+    st.subheader("2. การชำระเงินสด/เช็ค (Express)")
+    uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์รายงาน CSV", type=['csv'], accept_multiple_files=True)
+    
+    st.divider()
+    
+    process_btn = st.button("🚀 ประมวลผลข้อมูล", use_container_width=True, type="primary")
+
+# --- โลจิกประมวลผล ---
+if process_btn:
+    with st.spinner('กำลังประมวลผลข้อมูล...'):
+        csv_data = []
+        if uploaded_files:
+            for file in uploaded_files:
+                csv_data.extend(process_csv(file))
+                
+        csv_dict = {}
+        for r in csv_data:
+            cname = clean_name_th(r['ชื่อ-นามสกุล'])
+            csv_dict[cname] = r
             
-    csv_dict = {}
-    for r in csv_data:
-        cname = clean_name_th(r['ชื่อ-นามสกุล'])
-        csv_dict[cname] = r
+        all_data = []
         
-    all_data = []
-    
-    if use_gsheet and gsheet_url:
-        gsheet_data = pull_google_sheet_data(gsheet_url)
-        
-        for g in gsheet_data:
-            cname = clean_name_th(g['ชื่อ-นามสกุล'])
+        if use_gsheet and gsheet_url:
+            gsheet_data = pull_google_sheet_data(gsheet_url)
             
-            if cname in csv_dict:
-                csv_record = csv_dict[cname]
+            for g in gsheet_data:
+                cname = clean_name_th(g['ชื่อ-นามสกุล'])
                 
-                g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
-                g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
+                if cname in csv_dict:
+                    csv_record = csv_dict[cname]
+                    
+                    g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
+                    g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
+                    
+                    if g['เพศ'] == 'ไม่ระบุ': g['เพศ'] = csv_record['เพศ']
+                    if g['กลุ่มช่วงชั้น'] == 'ไม่ระบุ': g['กลุ่มช่วงชั้น'] = csv_record['กลุ่มช่วงชั้น']
+                    if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
+                    
+                    g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
+                    
+                    if csv_record['รายการบิล']:
+                        g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
+                        g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
+                    else:
+                        g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
+                    
+                    del csv_dict[cname]
                 
-                if g['เพศ'] == 'ไม่ระบุ': g['เพศ'] = csv_record['เพศ']
-                if g['กลุ่มช่วงชั้น'] == 'ไม่ระบุ': g['กลุ่มช่วงชั้น'] = csv_record['กลุ่มช่วงชั้น']
-                if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
+                all_data.append(g)
                 
-                g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
-                
-                if csv_record['รายการบิล']:
-                    g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
-                    g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
-                else:
-                    g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
-                
-                del csv_dict[cname]
-            
-            all_data.append(g)
-            
-    all_data.extend(list(csv_dict.values()))
-    
-    st.session_state['processed_data'] = all_data
+        all_data.extend(list(csv_dict.values()))
+        st.session_state['processed_data'] = all_data
 
 # ==========================================
-# แสดงผลข้อมูลเมื่อมีการประมวลผลแล้ว
+# แสดงผลข้อมูลส่วนหลัก (Main Area)
 # ==========================================
-if st.session_state['processed_data']:
+if not st.session_state['processed_data']:
+    st.info("👈 กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม **'ประมวลผลข้อมูล'** เพื่อเริ่มต้นใช้งานระบบ")
+else:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
     
-    tab1, tab2 = st.tabs(["📄 สรุปยอดและใบเสร็จ", "📈 แดชบอร์ดสรุป (Dashboard)"])
+    # แบ่งเป็น 2 แท็บ
+    tab1, tab2 = st.tabs(["📄 สรุปยอดและใบเสร็จ", "📈 แดชบอร์ด (Dashboard)"])
     
+    # --- Tab 1: ตารางสรุปและดาวน์โหลดใบเสร็จ ---
     with tab1:
-        st.success(f"✅ ประมวลผลเสร็จสิ้น! พบผู้ชำระเงิน {len(df_paid)} รายการ จากทั้งหมด {len(df)} รายการ")
+        st.success(f"พบนักเรียนที่ชำระเงินแล้วจำนวน **{len(df_paid)}** รายการ จากข้อมูลทั้งหมด {len(df)} รายการ")
         
-        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เพศ', 'พนักงานขาย (ระดับชั้นย่อย)', 'เอกสารอ้างอิง', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)', 'อ้างอิงไฟล์']
+        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เพศ', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
         df_display = df[display_cols]
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        # จัดเรียงปุ่มดาวน์โหลดไว้บรรทัดเดียวกัน
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
             output_excel = io.BytesIO()
             with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
                 df_display.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
-            st.download_button("📥 1. ดาวน์โหลดตารางรวม (Excel)", data=output_excel.getvalue(), file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(
+                label="📥 1. ดาวน์โหลดตารางรวม (Excel)", 
+                data=output_excel.getvalue(), 
+                file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
             
-        with col2:
+        with col_dl2:
             if not df_paid.empty:
                 if not has_font:
-                    st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ (ภาษาไทยใน PDF อาจไม่สมบูรณ์)")
-                
-                pdf_packet = create_receipts_pdf(df_paid)
-                st.download_button(f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", data=pdf_packet, file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf")
+                    st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ")
+                else:
+                    pdf_packet = create_receipts_pdf(df_paid)
+                    st.download_button(
+                        label=f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", 
+                        data=pdf_packet, 
+                        file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", 
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
         
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # ตารางแสดงข้อมูล
         def highlight_paid(row):
             colors = [''] * len(row)
             paid = row['ยอดที่จ่าย (บาท)']
@@ -535,72 +562,82 @@ if st.session_state['processed_data']:
                 colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
             return colors
             
-        styled_df = df_display.style.apply(highlight_paid, axis=1).format({'ยอดค้างเดิม (บาท)': '{:,.2f}', 'ยอดที่จ่าย (บาท)': '{:,.2f}', 'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'})
-        st.dataframe(styled_df, use_container_width=True)
+        styled_df = df_display.style.apply(highlight_paid, axis=1).format({
+            'ยอดค้างเดิม (บาท)': '{:,.2f}', 
+            'ยอดที่จ่าย (บาท)': '{:,.2f}', 
+            'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
+        })
+        st.dataframe(styled_df, use_container_width=True, height=500)
 
+    # --- Tab 2: Dashboard ---
     with tab2:
-        st.header("📈 แดชบอร์ดสรุปการรับชำระเงิน")
-        
         if df_paid.empty:
             st.info("ยังไม่มีข้อมูลการชำระเงินในระบบ")
         else:
-            # --- ส่วนฟิลเตอร์ (Drop-down) ---
-            st.markdown("**🔍 คัดกรองข้อมูล (Filters)**")
-            fcol1, fcol2 = st.columns(2)
+            # กล่องตัวกรองข้อมูล
+            with st.container():
+                st.markdown("#### 🔍 คัดกรองข้อมูล (Filters)")
+                fcol1, fcol2 = st.columns(2)
+                
+                gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
+                selected_gender = fcol1.selectbox("เลือกเพศ:", gender_list)
+                
+                grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
+                selected_grade = fcol2.selectbox("เลือกระดับชั้น:", grade_list)
             
-            gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
-            selected_gender = fcol1.selectbox("เลือกเพศ:", gender_list)
-            
-            grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
-            selected_grade = fcol2.selectbox("เลือกระดับชั้น (อ.1 - ป.6):", grade_list)
-            
-            # กรองข้อมูลตาม Drop-down
+            # การประมวลผลตัวกรอง
             df_filtered = df_paid.copy()
             if selected_gender != 'ทั้งหมด':
                 df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
             if selected_grade != 'ทั้งหมด':
                 df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
                 
-            # แสดงตัวเลขหลังกรอง
             total_amt = df_filtered['ยอดที่จ่าย (บาท)'].sum()
             total_ppl = len(df_filtered)
             
+            st.divider()
+            
+            # กล่องแสดงตัวเลขสรุป
             mcol1, mcol2 = st.columns(2)
             mcol1.metric("👥 จำนวนนักเรียนที่ชำระแล้ว (ตามเงื่อนไข)", f"{total_ppl} คน")
             mcol2.metric("💰 ยอดรับชำระรวม (ตามเงื่อนไข)", f"{total_amt:,.2f} บาท")
             
             st.divider()
             
-            # --- แสดงรายชื่อนักเรียนตามประเภทที่กรอง ---
-            st.markdown(f"**📋 รายชื่อนักเรียนที่ชำระเงินแล้ว (ตรงตามเงื่อนไขที่เลือก)**")
-            if len(df_filtered) > 0:
-                cols_to_show = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เพศ', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'ยอดที่จ่าย (บาท)']
-                st.dataframe(
-                    df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), 
-                    use_container_width=True
+            # แบ่งครึ่งจอกราฟและตาราง
+            chart_col, table_col = st.columns([1, 1])
+            
+            with chart_col:
+                st.markdown("#### 📊 กราฟสรุปยอดภาพรวม")
+                view_type = st.selectbox(
+                    "เลือกมุมมองกราฟ:",
+                    ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถม)", 
+                     "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", 
+                     "👦👧 สรุปตามเพศ (ชาย/หญิง)"],
+                    label_visibility="collapsed"
                 )
-            else:
-                st.warning("ไม่มีข้อมูลนักเรียนที่ตรงกับเงื่อนไขที่เลือก")
-
-            st.divider()
+                
+                if len(df_filtered) > 0:
+                    if "กลุ่มช่วงชั้น" in view_type:
+                        summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                        st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
+                        
+                    elif "ระดับชั้นย่อย" in view_type:
+                        summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                        st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
+                        
+                    elif "เพศ" in view_type:
+                        summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                        st.bar_chart(summary.set_index('เพศ'))
             
-            # --- ส่วนกราฟ (Drop-down) ---
-            view_type = st.selectbox(
-                "📊 เลือกรูปแบบกราฟสรุปยอดภาพรวม:",
-                ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถมต้น/ประถมปลาย)", 
-                 "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", 
-                 "👦👧 สรุปตามเพศ (ชาย/หญิง)"]
-            )
-            
-            if len(df_filtered) > 0:
-                if "กลุ่มช่วงชั้น" in view_type:
-                    summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
-                    
-                elif "ระดับชั้นย่อย" in view_type:
-                    summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                    
-                elif "เพศ" in view_type:
-                    summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('เพศ'))
+            with table_col:
+                st.markdown("#### 📋 รายชื่อนักเรียน (ตามเงื่อนไขที่เลือก)")
+                if len(df_filtered) > 0:
+                    cols_to_show = ['ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'ยอดที่จ่าย (บาท)']
+                    st.dataframe(
+                        df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), 
+                        use_container_width=True,
+                        height=350
+                    )
+                else:
+                    st.warning("ไม่มีข้อมูลนักเรียนที่ตรงกับเงื่อนไขที่เลือก")
