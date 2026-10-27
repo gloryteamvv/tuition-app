@@ -191,6 +191,18 @@ def create_receipts_pdf(df_paid):
     return packet
 
 # ==========================================
+# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อเพื่อเทียบข้อมูล)
+# ==========================================
+def clean_name_th(name):
+    """ตัดคำนำหน้าและช่องว่าง เพื่อให้เทียบชื่อจาก Form กับ CSV ได้แม่นยำขึ้น"""
+    n = str(name).replace(' ', '').strip()
+    prefixes = ['ด.ช.', 'ด.ญ.', 'เด็กชาย', 'เด็กหญิง', 'นาย', 'นาง', 'นางสาว']
+    for p in prefixes:
+        if n.startswith(p):
+            n = n[len(p):]
+    return n
+
+# ==========================================
 # หน้าจอหลัก
 # ==========================================
 st.title("📊 โปรแกรมดึงข้อมูลและออกใบเสร็จ")
@@ -223,54 +235,45 @@ def pull_google_sheet_data(sheet_url):
         
         for idx, row in df_gs.iterrows():
             try:
-                # 1. ค้นหาคอลัมน์ "ยอดเงิน" (คอลัมน์ AX)
                 col_amount = [c for c in df_gs.columns if 'ยอดเงิน' in str(c)]
                 amount_raw = str(row[col_amount[-1]]).replace(',', '') if col_amount else "0"
                 
                 if amount_raw.replace('.','',1).isdigit():
                     amount = float(amount_raw)
                     if amount > 0:
-                        # 2. ดึงชื่อนักเรียนจาก Index ของฟอร์มนี้ (คอลัมน์ F, G)
                         first_name = str(row.iloc[5]).strip()
                         last_name = str(row.iloc[6]).strip()
                         full_name = f"{first_name} {last_name}"
                         
-                        # 3. ดึงระดับชั้น (คอลัมน์ H)
                         grade = str(row.iloc[7]).strip() 
                         
-                        # 4. ดึงวันที่จากประทับเวลา (คอลัมน์ A)
                         raw_time = str(row.iloc[0]).split(' ')[0] 
-                        # แปลงรูปแบบวันที่เป็น DD/MM/YYYY
                         try:
                             d, m, y = raw_time.split('/')
-                            # Google sheet บางทีปีเป็น ค.ศ. บางทีเป็น พ.ศ.
                             year = int(y)
                             if year < 2500: year += 543
                             timestamp = f"{int(d):02d}/{int(m):02d}/{year}"
                         except:
                             timestamp = raw_time
-                            
-                        # 5. ดึงลิงก์สลิป (คอลัมน์ AS)
-                        slip_link = str(row.iloc[44]) if len(row) > 44 else "มีสลิปแนบ"
                         
                         results.append({
                             'รหัสนักเรียน': '-', 
                             'ชื่อ-นามสกุล': full_name,
-                            'เอกสารอ้างอิง': 'Google Form',
+                            'เอกสารอ้างอิง': '-',
                             'วันที่จ่ายเงิน': timestamp, 
                             'พนักงานขาย (ระดับชั้น)': grade, 
                             'เลขที่ใบเสร็จ': 'โอนผ่านฟอร์ม', 
                             'ยอดค้างเดิม (บาท)': amount, 
                             'ยอดที่จ่าย (บาท)': amount,
                             'ยอดคงเหลือล่าสุด (บาท)': 0,
-                            'รายการบิล': [{'doc_no': 'จาก Google Form', 'bill': amount, 'paid': amount, 'remain': 0}],
+                            'รายการบิล': [{'doc_no': '-', 'bill': amount, 'paid': amount, 'remain': 0}],
                             'อ้างอิงไฟล์': 'Google Sheet'
                         })
             except Exception:
                 continue
                 
     except Exception as e:
-        st.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตั้งค่าแชร์ลิงก์เป็น 'ทุกคนที่มีลิงก์') รายละเอียด: {e}")
+        st.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ รายละเอียด: {e}")
         
     return results
 
@@ -398,7 +401,6 @@ def process_csv(file):
 # ==========================================
 
 st.subheader("1️⃣ ข้อมูลจาก Google Form (สลิปโอนเงิน)")
-# ตั้งค่าลิงก์ที่คุณส่งมาให้เป็นค่าเริ่มต้น
 gsheet_url = st.text_input("ลิงก์ Google Sheet:", "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing")
 use_gsheet = st.checkbox("✅ ดึงข้อมูลอัตโนมัติจาก Google Form", value=True)
 
@@ -408,18 +410,53 @@ st.subheader("2️⃣ ข้อมูลจากโปรแกรม Express (
 uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์ CSV", type=['csv'], accept_multiple_files=True)
 
 if st.button("🚀 ประมวลผลข้อมูลและสร้างใบเสร็จ"):
-    all_data = []
+    csv_data = []
     
-    # 1. ดึงข้อมูล Google Sheet
-    if use_gsheet and gsheet_url:
-        gsheet_data = pull_google_sheet_data(gsheet_url)
-        if gsheet_data:
-            all_data.extend(gsheet_data)
-            
-    # 2. ดึงข้อมูลจากไฟล์อัปโหลด
+    # 1. ดึงข้อมูลจากไฟล์ CSV (เพื่อนำมาเป็นฐานข้อมูลอ้างอิง)
     if uploaded_files:
         for file in uploaded_files:
-            all_data.extend(process_csv(file))
+            csv_data.extend(process_csv(file))
+            
+    # สร้าง Dictionary สำหรับเปรียบเทียบชื่อและดึงรหัส
+    csv_dict = {}
+    for r in csv_data:
+        cname = clean_name_th(r['ชื่อ-นามสกุล'])
+        csv_dict[cname] = r
+        
+    all_data = []
+    
+    # 2. ดึงข้อมูลจาก Google Sheet และจับคู่กับ CSV
+    if use_gsheet and gsheet_url:
+        gsheet_data = pull_google_sheet_data(gsheet_url)
+        
+        for g in gsheet_data:
+            cname = clean_name_th(g['ชื่อ-นามสกุล'])
+            
+            # หากเจอชื่อในไฟล์ CSV ให้อัปเดตข้อมูลให้สมบูรณ์
+            if cname in csv_dict:
+                csv_record = csv_dict[cname]
+                
+                # ดึง รหัส และ ยอดบิลค้างเดิมจาก CSV มาใส่
+                g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
+                g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
+                
+                # คำนวณยอดคงเหลือใหม่ (ยอดค้างจาก CSV - ยอดโอนจาก Form)
+                g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
+                
+                # ดึงเลขเอกสาร (IV) จาก CSV มาใส่ในบิล
+                if csv_record['รายการบิล']:
+                    g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
+                    g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
+                else:
+                    g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
+                
+                # ลบข้อมูลที่ซ้ำออกจาก CSV dict เพื่อไม่ให้โชว์ 2 บรรทัด
+                del csv_dict[cname]
+            
+            all_data.append(g)
+            
+    # นำข้อมูลจาก CSV ที่เหลือ (คนที่ไม่ได้จ่ายผ่านฟอร์ม) มารวม
+    all_data.extend(list(csv_dict.values()))
             
     if all_data:
         df = pd.DataFrame(all_data)
