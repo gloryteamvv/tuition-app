@@ -443,7 +443,7 @@ if 'processed_data' not in st.session_state:
 
 with st.sidebar:
     st.markdown("### 🏫 ศูนย์ข้อมูลโรงเรียน")
-    st.markdown("<small style='color:#94a3b8; font-size:14px;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
+    st.markdown("<small style='color:#94a3b8;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
@@ -568,17 +568,12 @@ else:
     with tab_dashboard:
         st.markdown("<br>", unsafe_allow_html=True)
         
-        filter_col1, filter_col2, chart_type_col = st.columns(3)
+        filter_col1, filter_col2 = st.columns(2)
         gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
         selected_gender = filter_col1.selectbox("คัดกรองเพศ:", gender_list)
         
         grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
         selected_grade = filter_col2.selectbox("คัดกรองระดับชั้น:", grade_list)
-        
-        view_type = chart_type_col.selectbox(
-            "มุมมองกราฟ:",
-            ["กลุ่มช่วงชั้น (อนุบาล/ประถม)", "ระดับชั้นย่อย (อ.1 - ป.6)", "เพศ (ชาย/หญิง)"]
-        )
         
         df_filtered = df_paid.copy()
         if selected_gender != 'ทั้งหมด': df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
@@ -590,15 +585,18 @@ else:
         with chart_col:
             st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
             if len(df_filtered) > 0:
-                if "กลุ่มช่วงชั้น" in view_type:
-                    summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
-                elif "ระดับชั้นย่อย" in view_type:
-                    summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                elif "เพศ" in view_type:
+                if selected_grade != 'ทั้งหมด' and selected_gender == 'ทั้งหมด':
                     summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
                     st.bar_chart(summary.set_index('เพศ'))
+                elif selected_gender != 'ทั้งหมด' and selected_grade == 'ทั้งหมด':
+                    summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
+                elif selected_gender != 'ทั้งหมด' and selected_grade != 'ทั้งหมด':
+                    summary = df_filtered.groupby('วันที่จ่ายเงิน')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('วันที่จ่ายเงิน'))
+                else:
+                    summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
             else:
                 st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
                 
@@ -664,3 +662,4 @@ else:
         """, unsafe_allow_html=True)
         
         st.dataframe(styled_df, use_container_width=True, height=500)
+        
