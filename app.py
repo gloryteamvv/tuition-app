@@ -33,35 +33,19 @@ st.markdown("""
     h4 { font-size: 16px !important; color: #009460 !important; }
     h5 { font-size: 15px !important; color: #185f93 !important; }
     
-    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) - ใช้สี #B8e7ca (17%) */
+    /* ปรับแต่งเมนูด้านซ้าย (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #B8e7ca; 
     }
     [data-testid="stSidebar"] * {
-        color: #185f93 !important; /* สีตัวอักษร #185f93 (8%) */
+        color: #185f93 !important;
         font-size: 14px;
     }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
-        color: #009460 !important; /* สี #009460 (25%) */
-    }
-    [data-testid="stSidebar"] button * {
-        font-size: 16px !important;
-        font-weight: bold;
+        color: #009460 !important; 
     }
     
-    /* ปุ่ม Primary - ใช้สี #ff6e8a (25%) และตัวหนังสือสี #185f93 ให้อ่านง่าย */
-    button[kind="primary"] {
-        background-color: #ff6e8a !important;
-        border-color: #ff6e8a !important;
-        color: #185f93 !important; 
-    }
-    button[kind="primary"]:hover {
-        background-color: #ff8d6d !important; /* Hover สี #ff8d6d (8%) */
-        border-color: #ff8d6d !important;
-        color: white !important;
-    }
-    
-    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) - ใช้สี #f5e0a4 (16%) */
+    /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) */
     div[data-baseweb="select"] span[data-baseweb="tag"] {
         background-color: #f5e0a4 !important; 
         color: #185f93 !important; 
@@ -92,25 +76,25 @@ st.markdown("""
         border-left: 5px solid #009460; 
         margin-bottom: 15px;
     }
-    .kpi-card.green { border-left-color: #009460; } /* #009460 */
-    .kpi-card.yellow { border-left-color: #f5e0a4; } /* #f5e0a4 */
-    .kpi-card.pink { border-left-color: #ff6e8a; } /* #ff6e8a */
-    .kpi-card.orange { border-left-color: #ff8d6d; } /* #ff8d6d */
+    .kpi-card.green { border-left-color: #009460; } 
+    .kpi-card.yellow { border-left-color: #f5e0a4; } 
+    .kpi-card.pink { border-left-color: #ff6e8a; } 
+    .kpi-card.orange { border-left-color: #ff8d6d; } 
     
     .kpi-title {
         font-size: 13px;
-        color: #185f93; /* #185f93 */
+        color: #185f93; 
         margin-bottom: 5px;
         font-weight: 600;
     }
     .kpi-value {
         font-size: 24px; 
         font-weight: bold;
-        color: #009460; /* #009460 */
+        color: #009460; 
     }
     .kpi-unit {
         font-size: 13px;
-        color: #ff6e8a; /* #ff6e8a */
+        color: #ff6e8a; 
         font-weight: normal;
     }
     
@@ -134,8 +118,19 @@ st.markdown("""
         border-bottom: none;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #ff6e8a !important; /* แท็บ Active สี #ff6e8a */
-        color: #185f93 !important; /* เปลี่ยนตัวหนังสือเป็นสีเข้มให้อ่านง่าย */
+        background-color: #ff6e8a !important; 
+        color: #185f93 !important; 
+    }
+    /* ปรับปุ่มดาวน์โหลดให้เข้าธีม */
+    button[kind="primary"] {
+        background-color: #ff6e8a !important;
+        border-color: #ff6e8a !important;
+        color: #185f93 !important; 
+    }
+    button[kind="primary"]:hover {
+        background-color: #ff8d6d !important;
+        border-color: #ff8d6d !important;
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -334,7 +329,7 @@ def create_receipts_pdf(df_paid):
     return packet
 
 
-# --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
+# --- ฟังก์ชันดึงข้อมูลจาก Google Sheet (แคชไว้ 60 วินาที) ---
 @st.cache_data(ttl=60)
 def pull_google_sheet_data(sheet_url):
     results = []
@@ -378,7 +373,7 @@ def pull_google_sheet_data(sheet_url):
                         })
             except Exception: continue
     except Exception as e:
-        st.sidebar.error(f"ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
+        st.sidebar.error(f"ไม่สามารถเชื่อมต่อกับ Google Sheet ได้")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
@@ -471,7 +466,7 @@ logo_path = "logo.png"
 
 with st.sidebar:
     # ----------------------------------------
-    # แสดงโลโก้ Vieng Center ขนาดเล็กลงและจัดกึ่งกลาง
+    # แสดงโลโก้ Vieng Center
     # ----------------------------------------
     if os.path.exists(logo_path):
         logo_b64 = get_image_base64(logo_path)
@@ -488,57 +483,52 @@ with st.sidebar:
     
     st.markdown(" ")
     uploaded_files = st.file_uploader("อัปโหลดรายงาน CSV (เงินสด/เช็ค)", type=['csv'], accept_multiple_files=True)
-    
-    st.divider()
-    process_btn = st.button("ประมวลผลข้อมูล", use_container_width=True, type="primary")
-
 
 # ==========================================
-# โลจิกประมวลผล (เมื่อกดปุ่ม)
+# โลจิกประมวลผล (ทำงานอัตโนมัติ)
 # ==========================================
-if process_btn:
-    with st.spinner('กำลังดึงและประมวลผลข้อมูล...'):
-        csv_data = []
-        if uploaded_files:
-            for file in uploaded_files:
-                csv_data.extend(process_csv(file))
-                
-        csv_dict = {}
-        for r in csv_data:
-            cname = clean_name_th(r['ชื่อ-นามสกุล'])
-            csv_dict[cname] = r
-            
-        all_data = []
-        if use_gsheet and gsheet_url:
-            gsheet_data = pull_google_sheet_data(gsheet_url)
-            for g in gsheet_data:
-                cname = clean_name_th(g['ชื่อ-นามสกุล'])
-                if cname in csv_dict:
-                    csv_record = csv_dict[cname]
-                    g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
-                    g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
-                    
-                    if g['เพศ'] == 'ไม่ระบุ': g['เพศ'] = csv_record['เพศ']
-                    if g['กลุ่มช่วงชั้น'] == 'ไม่ระบุ': g['กลุ่มช่วงชั้น'] = csv_record['กลุ่มช่วงชั้น']
-                    if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
-                    
-                    g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
-                    if csv_record['รายการบิล']:
-                        g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
-                        g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
-                    else:
-                        g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
-                    del csv_dict[cname]
-                all_data.append(g)
-                
-        all_data.extend(list(csv_dict.values()))
+csv_data = []
+if uploaded_files:
+    for file in uploaded_files:
+        csv_data.extend(process_csv(file))
         
-        if len(all_data) > 0:
-            st.session_state['processed_data'] = all_data
-            st.sidebar.success(f"ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
-        else:
-            st.session_state['processed_data'] = []
-            st.sidebar.error("ไม่พบข้อมูลลูกหนี้! กรุณาตรวจสอบไฟล์อัปโหลด หรือลิงก์ Google Form")
+csv_dict = {}
+for r in csv_data:
+    cname = clean_name_th(r['ชื่อ-นามสกุล'])
+    csv_dict[cname] = r
+    
+all_data = []
+if use_gsheet and gsheet_url:
+    gsheet_data = pull_google_sheet_data(gsheet_url)
+    for g in gsheet_data:
+        cname = clean_name_th(g['ชื่อ-นามสกุล'])
+        if cname in csv_dict:
+            csv_record = csv_dict[cname]
+            g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
+            g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
+            
+            if g['เพศ'] == 'ไม่ระบุ': g['เพศ'] = csv_record['เพศ']
+            if g['กลุ่มช่วงชั้น'] == 'ไม่ระบุ': g['กลุ่มช่วงชั้น'] = csv_record['กลุ่มช่วงชั้น']
+            if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
+            
+            g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
+            if csv_record['รายการบิล']:
+                g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
+                g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
+            else:
+                g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
+            del csv_dict[cname]
+        all_data.append(g)
+        
+all_data.extend(list(csv_dict.values()))
+
+st.session_state['processed_data'] = all_data
+
+if len(all_data) > 0:
+    st.sidebar.success(f"เชื่อมต่อข้อมูลสำเร็จ {len(all_data)} รายการ")
+else:
+    st.sidebar.warning("ยังไม่มีข้อมูล หรือไม่พบข้อมูลลูกหนี้")
+
 
 # ==========================================
 # Layout : Main Area (พื้นที่ตรงกลาง)
@@ -556,7 +546,7 @@ else:
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
-    st.info("กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม 'ประมวลผลข้อมูล'")
+    st.info("ไม่พบข้อมูล กรุณาตรวจสอบการเชื่อมต่อ Google Form หรืออัปโหลดไฟล์ CSV ที่เมนูด้านซ้าย")
 else:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
@@ -656,7 +646,6 @@ else:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### คัดกรองข้อมูลสำหรับออกใบเสร็จ")
         
-        # ฟังก์ชันกรองใหม่สำหรับแท็บออกใบเสร็จ
         filter2_col1, filter2_col2, filter2_col3 = st.columns(3)
         
         gender_list2 = sorted(list(df['เพศ'].unique()))
@@ -670,7 +659,6 @@ else:
         
         df_filtered_table = df.copy()
         
-        # นำตัวกรองมาใช้งาน
         if selected_gender2:
             df_filtered_table = df_filtered_table[df_filtered_table['เพศ'].isin(selected_gender2)]
         else:
@@ -686,7 +674,6 @@ else:
         else:
             df_filtered_table = df_filtered_table[df_filtered_table['วันที่จ่ายเงิน'].isin([])]
 
-        # แยกตารางที่จะใช้สร้าง PDF (เฉพาะคนที่มียอดจ่ายเงิน)
         df_paid_filtered = df_filtered_table[df_filtered_table['ยอดที่จ่าย (บาท)'] > 0].copy()
         
         display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
