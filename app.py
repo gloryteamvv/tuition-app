@@ -18,7 +18,7 @@ from bahttext import bahttext
 # ==========================================
 # ตั้งค่าหน้าเพจแบบ Wide และธีม
 # ==========================================
-st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
 # Custom CSS ปรับแต่ง UI ตามชุดสีที่กำหนด
@@ -151,7 +151,7 @@ if os.path.exists(font_path):
     has_font = True
 
 # ==========================================
-# ฟังก์ชันตัวช่วย (ทำความสะอาดชื่อ และแยกหมวดหมู่แบบชาญฉลาด)
+# ฟังก์ชันตัวช่วย
 # ==========================================
 def clean_name_th(name):
     n = str(name).replace(' ', '').strip()
@@ -173,20 +173,15 @@ def extract_gender(name, title_from_form=""):
 
 def get_grade_info(raw_grade):
     clean_raw = str(raw_grade).replace(' ', '').strip()
-    
-    # ตรวจสอบประถม
     if '1' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 1')
     if '2' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 2')
     if '3' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมต้น', 'ประถมศึกษาปีที่ 3')
     if '4' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 4')
     if '5' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 5')
     if '6' in clean_raw and ('ป' in clean_raw or 'ประถม' in clean_raw): return ('ประถมปลาย', 'ประถมศึกษาปีที่ 6')
-    
-    # ตรวจสอบอนุบาล
     if '1' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 1')
     if '2' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 2')
     if '3' in clean_raw and ('อ' in clean_raw or 'อนุบาล' in clean_raw): return ('อนุบาล', 'อนุบาล 3')
-    
     return ('ไม่ระบุ', str(raw_grade).strip())
 
 def get_image_base64(path):
@@ -383,7 +378,7 @@ def pull_google_sheet_data(sheet_url):
                         })
             except Exception: continue
     except Exception as e:
-        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
+        st.sidebar.error(f"ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (โปรดตรวจสอบการแชร์ลิงก์)")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
@@ -476,25 +471,26 @@ logo_path = "logo.png"
 
 with st.sidebar:
     # ----------------------------------------
-    # แสดงโลโก้ Vieng Center ขนาดเล็กลง (ปรับ width=120)
+    # แสดงโลโก้ Vieng Center ขนาดเล็กลงและจัดกึ่งกลาง
     # ----------------------------------------
     if os.path.exists(logo_path):
-        st.image(logo_path, width=130)
+        logo_b64 = get_image_base64(logo_path)
+        st.markdown(f"<div style='text-align: center;'><img src='data:image/png;base64,{logo_b64}' width='130'></div>", unsafe_allow_html=True)
     else:
-        st.markdown("### <span style='color:#009460;'>Vieng</span> <span style='color:#ff6e8a;'>Center</span>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center;'><h3><span style='color:#009460;'>Vieng</span> <span style='color:#ff6e8a;'>Center</span></h3></div>", unsafe_allow_html=True)
         
     st.divider()
     
-    st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
+    st.markdown("#### นำเข้าข้อมูลรับชำระ")
     
     gsheet_url = "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing"
-    use_gsheet = st.checkbox("🌐 ดึงข้อมูลจาก Google Form (โอนเงิน)", value=True)
+    use_gsheet = st.checkbox("ดึงข้อมูลจาก Google Form (โอนเงิน)", value=True)
     
     st.markdown(" ")
-    uploaded_files = st.file_uploader("📂 อัปโหลดรายงาน CSV (เงินสด/เช็ค)", type=['csv'], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("อัปโหลดรายงาน CSV (เงินสด/เช็ค)", type=['csv'], accept_multiple_files=True)
     
     st.divider()
-    process_btn = st.button("🚀 ประมวลผลข้อมูล", use_container_width=True, type="primary")
+    process_btn = st.button("ประมวลผลข้อมูล", use_container_width=True, type="primary")
 
 
 # ==========================================
@@ -539,29 +535,28 @@ if process_btn:
         
         if len(all_data) > 0:
             st.session_state['processed_data'] = all_data
-            st.sidebar.success(f"✅ ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
+            st.sidebar.success(f"ดึงข้อมูลสำเร็จ {len(all_data)} รายการ")
         else:
             st.session_state['processed_data'] = []
-            st.sidebar.error("❌ ไม่พบข้อมูลลูกหนี้! กรุณาตรวจสอบไฟล์อัปโหลด หรือลิงก์ Google Form")
+            st.sidebar.error("ไม่พบข้อมูลลูกหนี้! กรุณาตรวจสอบไฟล์อัปโหลด หรือลิงก์ Google Form")
 
 # ==========================================
 # Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
 
 # ----------------------------------------
-# แสดงโลโก้ขนาดเล็กในหัวข้อ (แทน 🏠)
+# แสดงโลโก้ขนาดเล็กในหัวข้อ
 # ----------------------------------------
 if os.path.exists(logo_path):
     logo_b64 = get_image_base64(logo_path)
     st.markdown(f"##### <img src='data:image/png;base64,{logo_b64}' width='24' style='vertical-align: middle; margin-right: 8px;'> <span style='vertical-align: middle;'>Vieng Center > ทะเบียนรับเงิน</span>", unsafe_allow_html=True)
 else:
-    st.markdown("##### 🏠 Vieng Center > ทะเบียนรับเงิน")
+    st.markdown("##### Vieng Center > ทะเบียนรับเงิน")
 
-st.markdown(f"<span style='font-size:14px; color:#185f93;'>**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ข้อมูล ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}</span>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 if not st.session_state['processed_data']:
-    st.info("👈 กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม **'ประมวลผลข้อมูล'**")
+    st.info("กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม 'ประมวลผลข้อมูล'")
 else:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
@@ -575,48 +570,48 @@ else:
     with col1:
         st.markdown(f"""
         <div class="kpi-card green">
-            <div class="kpi-title">💵 ยอดรับชำระรวมทั้งหมด</div>
+            <div class="kpi-title">ยอดรับชำระรวมทั้งหมด</div>
             <div class="kpi-value">{total_revenue:,.2f} <span class="kpi-unit">บาท</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div class="kpi-card yellow">
-            <div class="kpi-title">👥 นักเรียนที่ชำระแล้ว</div>
+            <div class="kpi-title">นักเรียนที่ชำระแล้ว</div>
             <div class="kpi-value">{total_students_paid} <span class="kpi-unit">คน</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div class="kpi-card pink">
-            <div class="kpi-title">📱 โอนผ่านออนไลน์ (Form)</div>
+            <div class="kpi-title">โอนผ่านออนไลน์ (Form)</div>
             <div class="kpi-value">{online_count} <span class="kpi-unit">รายการ</span></div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div class="kpi-card orange">
-            <div class="kpi-title">🏫 เงินสด/เช็ค (Express)</div>
+            <div class="kpi-title">เงินสด/เช็ค (Express)</div>
             <div class="kpi-value">{express_count} <span class="kpi-unit">รายการ</span></div>
         </div>
         """, unsafe_allow_html=True)
         
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tab_dashboard, tab_table = st.tabs(["📊 ภาพรวม (Dashboard)", "📄 ทะเบียนรับเงิน (ออกใบเสร็จ)"])
+    tab_dashboard, tab_table = st.tabs(["ภาพรวม (Dashboard)", "ทะเบียนรับเงิน (ออกใบเสร็จ)"])
     
     # ------------------ TAB: Dashboard ------------------
     with tab_dashboard:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("##### 🔍 คัดกรองข้อมูล")
+        st.markdown("##### คัดกรองข้อมูล")
         
         filter_col1, filter_col2 = st.columns(2)
         
         gender_list = sorted(list(df_paid['เพศ'].unique()))
-        selected_gender = filter_col1.multiselect("👦👧 คัดกรองเพศ (เลือกได้หลายตัวเลือก):", options=gender_list, default=gender_list)
+        selected_gender = filter_col1.multiselect("คัดกรองเพศ (เลือกได้หลายตัวเลือก):", options=gender_list, default=gender_list)
         
         grade_list = sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
-        selected_grade = filter_col2.multiselect("📚 คัดกรองระดับชั้น (เลือกได้หลายตัวเลือก):", options=grade_list, default=grade_list)
+        selected_grade = filter_col2.multiselect("คัดกรองระดับชั้น (เลือกได้หลายตัวเลือก):", options=grade_list, default=grade_list)
         
         df_filtered = df_paid.copy()
         
@@ -634,7 +629,7 @@ else:
         chart_col, table_col = st.columns([1.2, 1])
         
         with chart_col:
-            st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
+            st.markdown("##### กราฟสรุปยอดชำระเงิน")
             if len(df_filtered) > 0:
                 filtered_grade = len(selected_grade) > 0 and len(selected_grade) < len(grade_list)
                 filtered_gender = len(selected_gender) > 0 and len(selected_gender) < len(gender_list)
@@ -649,7 +644,7 @@ else:
                 st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
                 
         with table_col:
-            st.markdown("##### 📋 รายชื่อนักเรียน (ตามการกรอง)")
+            st.markdown("##### รายชื่อนักเรียน (ตามการกรอง)")
             if len(df_filtered) > 0:
                 cols_to_show = ['ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'ยอดที่จ่าย (บาท)']
                 st.dataframe(df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True, height=350)
@@ -668,7 +663,7 @@ else:
             with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
                 df_display.to_excel(writer, index=False, sheet_name='รายงานรับชำระ')
             st.download_button(
-                label="📥 ดาวน์โหลดตารางรวม (Excel)", 
+                label="ดาวน์โหลดตารางรวม (Excel)", 
                 data=output_excel.getvalue(), 
                 file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", 
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -678,11 +673,11 @@ else:
         with act_col2:
             if not df_paid.empty:
                 if not has_font:
-                    st.warning("⚠️ ไม่พบฟอนต์ THSarabunNew.ttf")
+                    st.warning("ไม่พบฟอนต์ THSarabunNew.ttf")
                 else:
                     pdf_packet = create_receipts_pdf(df_paid)
                     st.download_button(
-                        label=f"🖨️ พิมพ์ใบเสร็จทั้งหมด ({len(df_paid)} ใบ)", 
+                        label=f"พิมพ์ใบเสร็จทั้งหมด ({len(df_paid)} ใบ)", 
                         data=pdf_packet, 
                         file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", 
                         mime="application/pdf",
