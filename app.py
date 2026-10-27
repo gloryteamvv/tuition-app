@@ -14,8 +14,89 @@ from reportlab.lib.units import cm
 from reportlab.lib import colors
 from bahttext import bahttext
 
-# ตั้งค่าหน้าเพจให้กว้างและใส่ไอคอน
-st.set_page_config(page_title="ระบบสรุปยอดค่าเทอม", page_icon="🏫", layout="wide")
+# ==========================================
+# ตั้งค่าหน้าเพจแบบ Wide และธีม
+# ==========================================
+st.set_page_config(page_title="ระบบบัญชีสถานศึกษา - สรุปยอดค่าเทอม", page_icon="🏫", layout="wide", initial_sidebar_state="expanded")
+
+# ==========================================
+# Custom CSS ปรับแต่ง UI ให้คล้ายต้นแบบ
+# ==========================================
+st.markdown("""
+<style>
+    /* ปรับสีพื้นหลังแถบด้านซ้าย (Sidebar) ให้เป็นสีน้ำเงินเข้ม */
+    [data-testid="stSidebar"] {
+        background-color: #122345;
+        color: white;
+    }
+    /* สีตัวอักษรใน Sidebar */
+    [data-testid="stSidebar"] * {
+        color: #e6e9ef !important;
+    }
+    /* ปรับสีพื้นหลังหลัก */
+    .stApp {
+        background-color: #f4f6f9;
+    }
+    /* ซ่อน Header พื้นฐานของ Streamlit */
+    header {visibility: hidden;}
+    
+    /* สไตล์สำหรับการ์ดสรุปยอด (KPI Cards) */
+    .kpi-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e0e4e8;
+        border-left: 5px solid #3b82f6; /* สีเส้นขอบซ้าย */
+        margin-bottom: 20px;
+    }
+    .kpi-card.green { border-left-color: #10b981; }
+    .kpi-card.purple { border-left-color: #8b5cf6; }
+    .kpi-card.orange { border-left-color: #f59e0b; }
+    
+    .kpi-title {
+        font-size: 14px;
+        color: #64748b;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    .kpi-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #0f172a;
+    }
+    .kpi-unit {
+        font-size: 14px;
+        color: #94a3b8;
+        font-weight: normal;
+    }
+    
+    /* ปรับแท็บ */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: white;
+        padding: 10px 10px 0 10px;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #f8fafc;
+        border-radius: 4px 4px 0 0;
+        color: #475569;
+        font-weight: 600;
+        padding: 0 20px;
+        border: 1px solid #e2e8f0;
+        border-bottom: none;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #1e3a8a !important;
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # ==========================================
 # ลงทะเบียนฟอนต์ภาษาไทยสำหรับ PDF
@@ -98,7 +179,6 @@ def create_receipts_pdf(df_paid):
         if not isinstance(invoices, list) or len(invoices) == 0:
             invoices = [{'doc_no': row['เอกสารอ้างอิง'], 'paid': total_amount, 'remain': row['ยอดคงเหลือล่าสุด (บาท)']}]
         
-        # --- ส่วนหัว (Header) ---
         c.setFont(font_name, 22)
         c.drawString(2*cm, 18*cm, "โรงเรียนศิริมงคลศึกษา บางบัวทอง")
         
@@ -114,12 +194,8 @@ def create_receipts_pdf(df_paid):
         c.setLineWidth(0.5)
         c.line(2*cm, 14.5*cm, 27.5*cm, 14.5*cm)
         
-        # --- ข้อมูลลูกค้าและเอกสาร ---
         c.setFont(font_name, 16)
-        
-        left_label = 2 * cm
-        left_colon = 5 * cm
-        left_val = 5.3 * cm
+        left_label, left_colon, left_val = 2 * cm, 5 * cm, 5.3 * cm
         
         c.drawString(left_label, 13.5*cm, "ลูกค้า (รหัสลูกค้า)")
         c.drawString(left_colon, 13.5*cm, ":")
@@ -133,9 +209,7 @@ def create_receipts_pdf(df_paid):
         c.drawString(left_colon, 12.1*cm, ":")
         c.drawString(left_val, 12.1*cm, "........................................................................")
         
-        right_label = 16.5 * cm
-        right_colon = 19 * cm
-        right_val = 19.3 * cm
+        right_label, right_colon, right_val = 16.5 * cm, 19 * cm, 19.3 * cm
         
         c.drawString(right_label, 13.5*cm, "เลขที่ใบเสร็จ")
         c.drawString(right_colon, 13.5*cm, ":")
@@ -149,18 +223,12 @@ def create_receipts_pdf(df_paid):
         c.drawString(right_colon, 12.1*cm, ":")
         c.drawString(right_val, 12.1*cm, f"{salesperson}")
         
-        # --- ตารางรายการ ---
-        table_top = 11 * cm
-        row_height = 0.8 * cm 
-        
+        table_top, row_height = 11 * cm, 0.8 * cm 
         num_rows = len(invoices)
-        if num_rows > 1: 
-            num_rows += 1 
+        if num_rows > 1: num_rows += 1 
             
         table_height = (num_rows * row_height) + 0.5 * cm
-        if table_height < 2 * cm: 
-            table_height = 2 * cm 
-            
+        if table_height < 2 * cm: table_height = 2 * cm 
         table_bottom = table_top - table_height
         
         c.setFillColor(colors.HexColor('#333333'))
@@ -171,9 +239,7 @@ def create_receipts_pdf(df_paid):
         c.rect(2*cm, table_bottom, 25.5*cm, table_height) 
         
         col_x = [2*cm, 3.5*cm, 7.5*cm, 11.5*cm, 14.5*cm, 17.5*cm, 21.5*cm, 24.5*cm, 27.5*cm]
-        
-        for x in col_x[1:-1]:
-            c.line(x, table_top, x, table_bottom)
+        for x in col_x[1:-1]: c.line(x, table_top, x, table_bottom)
             
         c.setFillColor(colors.white)
         c.setFont(font_name, 14)
@@ -186,24 +252,19 @@ def create_receipts_pdf(df_paid):
         c.drawCentredString((col_x[6]+col_x[7])/2, table_top-0.7*cm, "ยอดคงค้าง")
         c.drawCentredString((col_x[7]+col_x[8])/2, table_top-0.7*cm, "ยอดชำระ")
         
-        # --- ข้อมูลในตาราง ---
         c.setFillColor(colors.black)
-        
         data_y = table_top - 1.5*cm
         for i, inv in enumerate(invoices):
             c.setFont(font_name, 16)
             c.drawCentredString((col_x[0]+col_x[1])/2, data_y, str(i+1))
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "ค่าเทอม/ค่าเล่าเรียน")
-            
             c.setFont(font_name, 14)
             c.drawCentredString((col_x[2]+col_x[3])/2, data_y, str(inv['doc_no']))
             c.drawCentredString((col_x[3]+col_x[4])/2, data_y, str(today_str)) 
-            
             c.setFont(font_name, 16)
             c.drawCentredString((col_x[5]+col_x[6])/2, data_y, f"{inv['paid']:,.2f}") 
             c.drawCentredString((col_x[6]+col_x[7])/2, data_y, f"{inv['remain']:,.2f}")
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{inv['paid']:,.2f}")
-            
             data_y -= row_height 
             
         if len(invoices) > 1:
@@ -211,9 +272,7 @@ def create_receipts_pdf(df_paid):
             c.drawCentredString((col_x[1]+col_x[2])/2, data_y, "รวมยอดชำระ")
             c.drawCentredString((col_x[7]+col_x[8])/2, data_y, f"{total_amount:,.2f}")
         
-        # --- ส่วนสรุปยอด ---
         summary_y = table_bottom - 1 * cm
-        
         c.drawString(2.5*cm, summary_y, f"({amount_text})")
         c.drawString(22*cm, summary_y, "รวมเป็นเงิน")
         
@@ -221,7 +280,6 @@ def create_receipts_pdf(df_paid):
         c.rect(24.5*cm, box_y, 3*cm, 1*cm)
         c.drawCentredString((col_x[7]+col_x[8])/2, box_y + 0.3*cm, f"{total_amount:,.2f}")
         
-        # --- ท้ายบิล ---
         footer_y1 = table_bottom - 2.5 * cm
         footer_y2 = table_bottom - 3.5 * cm
         footer_y3 = table_bottom - 4.5 * cm
@@ -246,19 +304,15 @@ def pull_google_sheet_data(sheet_url):
     results = []
     try:
         match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheet_url)
-        if not match:
-            return []
-        
+        if not match: return []
         sheet_id = match.group(1)
         csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-        
         df_gs = pd.read_csv(csv_url)
         
         for idx, row in df_gs.iterrows():
             try:
                 col_amount = [c for c in df_gs.columns if 'ยอดเงิน' in str(c)]
                 amount_raw = str(row[col_amount[-1]]).replace(',', '') if col_amount else "0"
-                
                 if amount_raw.replace('.','',1).isdigit():
                     amount = float(amount_raw)
                     if amount > 0:
@@ -266,61 +320,40 @@ def pull_google_sheet_data(sheet_url):
                         first_name = str(row.iloc[5]).strip()
                         last_name = str(row.iloc[6]).strip()
                         full_name = f"{first_name} {last_name}"
-                        
                         grade_raw = str(row.iloc[7]).strip() 
                         main_grade, sub_grade = get_grade_info(grade_raw)
                         gender = extract_gender(full_name, title_student)
-                        
                         raw_time = str(row.iloc[0]).split(' ')[0] 
                         try:
                             d, m, y = raw_time.split('/')
                             year = int(y)
                             if year < 2500: year += 543
                             timestamp = f"{int(d):02d}/{int(m):02d}/{year}"
-                        except:
-                            timestamp = raw_time
+                        except: timestamp = raw_time
                         
                         results.append({
-                            'รหัสนักเรียน': '-', 
-                            'ชื่อ-นามสกุล': full_name,
-                            'เพศ': gender,
-                            'กลุ่มช่วงชั้น': main_grade,
-                            'พนักงานขาย (ระดับชั้นย่อย)': sub_grade,
-                            'เอกสารอ้างอิง': '-',
-                            'วันที่จ่ายเงิน': timestamp, 
-                            'เลขที่ใบเสร็จ': 'โอนผ่านฟอร์ม', 
-                            'ยอดค้างเดิม (บาท)': amount, 
-                            'ยอดที่จ่าย (บาท)': amount,
-                            'ยอดคงเหลือล่าสุด (บาท)': 0,
+                            'รหัสนักเรียน': '-', 'ชื่อ-นามสกุล': full_name, 'เพศ': gender,
+                            'กลุ่มช่วงชั้น': main_grade, 'พนักงานขาย (ระดับชั้นย่อย)': sub_grade,
+                            'เอกสารอ้างอิง': '-', 'วันที่จ่ายเงิน': timestamp, 
+                            'เลขที่ใบเสร็จ': 'โอนผ่านฟอร์ม', 'ยอดค้างเดิม (บาท)': amount, 
+                            'ยอดที่จ่าย (บาท)': amount, 'ยอดคงเหลือล่าสุด (บาท)': 0,
                             'รายการบิล': [{'doc_no': '-', 'bill': amount, 'paid': amount, 'remain': 0}],
-                            'อ้างอิงไฟล์': 'Google Sheet'
+                            'อ้างอิงไฟล์': 'Google Sheet', 'source': 'online'
                         })
-            except Exception:
-                continue
-                
+            except Exception: continue
     except Exception as e:
-        st.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ รายละเอียด: {e}")
-        
+        st.sidebar.error(f"⚠️ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้")
     return results
 
 # --- ฟังก์ชันอ่านไฟล์ CSV Express ---
 def process_csv(file):
     results = []
-    try:
-        content = file.getvalue().decode('utf-8')
-    except UnicodeDecodeError:
-        content = file.getvalue().decode('cp874', errors='ignore')
+    try: content = file.getvalue().decode('utf-8')
+    except UnicodeDecodeError: content = file.getvalue().decode('cp874', errors='ignore')
         
     reader = csv.reader(io.StringIO(content))
-    sum_bill = 0.0
-    sum_paid = 0.0
-    doc_list = [] 
-    doc_date_list = [] 
-    pay_date_list = [] 
-    salesperson_list = [] 
-    receipt_no_list = []
-    invoices_paid = [] 
-    
+    sum_bill, sum_paid = 0.0, 0.0
+    doc_list, doc_date_list, pay_date_list, salesperson_list, receipt_no_list, invoices_paid = [], [], [], [], [], []
     current_name = ""
     
     for row in reader:
@@ -343,122 +376,83 @@ def process_csv(file):
                     doc_date_list.append(non_empty[0])
                     doc_list.append(non_empty[1])
                     
-                bill_str = non_empty[-3].replace(',', '')
-                paid_str = non_empty[-2].replace(',', '')
-                remain_str = non_empty[-1].replace(',', '')
-                
+                bill_str, paid_str, remain_str = non_empty[-3].replace(',', ''), non_empty[-2].replace(',', ''), non_empty[-1].replace(',', '')
                 if bill_str.replace('.','',1).isdigit() and paid_str.replace('.','',1).isdigit() and remain_str.replace('.','',1).isdigit():
-                    bill = float(bill_str)
-                    paid = float(paid_str)
-                    remain = float(remain_str)
-                    
+                    bill, paid, remain = float(bill_str), float(paid_str), float(remain_str)
                     if len(non_empty) >= 6:
                         sales_raw = non_empty[2]
                         if sales_raw and not sales_raw.startswith('RE') and not sales_raw.replace('.','').isdigit():
                             salesperson_list.append(sales_raw) 
-                    
                     sum_bill += bill
                     sum_paid += paid
-                    
-                    if paid > 0:
-                        invoices_paid.append({
-                            'doc_no': non_empty[1], 
-                            'bill': bill, 
-                            'paid': paid, 
-                            'remain': remain 
-                        })
-            except ValueError:
-                pass
+                    if paid > 0: invoices_paid.append({'doc_no': non_empty[1], 'bill': bill, 'paid': paid, 'remain': remain})
+            except ValueError: pass
                 
         if len(row) >= 10 and not row[1].strip().startswith('รวม'):
             if row[8].strip() and not row[7].strip():
                 for cell in row[8:]:
                     cell_str = cell.strip()
                     if len(cell_str) >= 6 and cell_str.count('/') >= 1:
-                        if cell_str not in pay_date_list:
-                            pay_date_list.append(cell_str)
+                        if cell_str not in pay_date_list: pay_date_list.append(cell_str)
                         break
                         
         if non_empty[0] == "รวมลูกค้า":
             try:
-                name = " ".join(non_empty[1].split())
-                code = non_empty[2]
+                name, code = " ".join(non_empty[1].split()), non_empty[2]
                 total_remain = float(non_empty[-1].replace(',', ''))
-                
-                if sum_bill == 0 and total_remain > 0:
-                    sum_bill = total_remain
+                if sum_bill == 0 and total_remain > 0: sum_bill = total_remain
                 
                 docs_str = ", ".join(doc_list)
                 receipts_str = receipt_no_list[0] if receipt_no_list else ""
-                
                 sales_raw = salesperson_list[0] if salesperson_list else ""
                 main_grade, sub_grade = get_grade_info(sales_raw)
                 gender = extract_gender(name)
                 
-                if pay_date_list:
-                    dates_str = pay_date_list[0]
-                elif doc_date_list:
-                    dates_str = doc_date_list[0]
-                else:
-                    dates_str = ""
+                dates_str = pay_date_list[0] if pay_date_list else doc_date_list[0] if doc_date_list else ""
                 
                 results.append({
-                    'รหัสนักเรียน': code,
-                    'ชื่อ-นามสกุล': name,
-                    'เพศ': gender,
-                    'กลุ่มช่วงชั้น': main_grade,
-                    'พนักงานขาย (ระดับชั้นย่อย)': sub_grade,
-                    'เอกสารอ้างอิง': docs_str,
-                    'วันที่จ่ายเงิน': dates_str, 
-                    'เลขที่ใบเสร็จ': receipts_str, 
-                    'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
-                    'ยอดที่จ่าย (บาท)': round(sum_paid, 2),
-                    'ยอดคงเหลือล่าสุด (บาท)': round(total_remain, 2),
-                    'รายการบิล': invoices_paid, 
-                    'อ้างอิงไฟล์': file.name
+                    'รหัสนักเรียน': code, 'ชื่อ-นามสกุล': name, 'เพศ': gender,
+                    'กลุ่มช่วงชั้น': main_grade, 'พนักงานขาย (ระดับชั้นย่อย)': sub_grade,
+                    'เอกสารอ้างอิง': docs_str, 'วันที่จ่ายเงิน': dates_str, 
+                    'เลขที่ใบเสร็จ': receipts_str, 'ยอดค้างเดิม (บาท)': round(sum_bill, 2),
+                    'ยอดที่จ่าย (บาท)': round(sum_paid, 2), 'ยอดคงเหลือล่าสุด (บาท)': round(total_remain, 2),
+                    'รายการบิล': invoices_paid, 'อ้างอิงไฟล์': file.name, 'source': 'express'
                 })
-                
-                sum_bill = 0.0
-                sum_paid = 0.0
-                doc_list = []
-                doc_date_list = []
-                pay_date_list = []
-                salesperson_list = []
-                receipt_no_list = []
-                invoices_paid = []
+                sum_bill, sum_paid = 0.0, 0.0
+                doc_list, doc_date_list, pay_date_list, salesperson_list, receipt_no_list, invoices_paid = [], [], [], [], [], []
                 current_name = ""
-            except Exception:
-                pass
-                
+            except Exception: pass
     return results
 
-# ==========================================
-# หน้าจอหลัก (UI) และ Session State
-# ==========================================
-st.title("🏫 ระบบจัดการและสรุปยอดค่าธรรมเนียมการศึกษา")
-st.markdown("โปรแกรมสำหรับดึงข้อมูลชำระเงินจากแบบฟอร์มออนไลน์ และโปรแกรมบัญชี Express เพื่อสร้างใบเสร็จรับเงินอัตโนมัติ")
 
+# ==========================================
+# Layout : Sidebar (เมนูด้านซ้าย)
+# ==========================================
 if 'processed_data' not in st.session_state:
     st.session_state['processed_data'] = []
 
-# --- ส่วนนำเข้าข้อมูลด้านซ้าย (Sidebar) ---
 with st.sidebar:
-    st.header("⚙️ นำเข้าข้อมูล")
+    st.markdown("### 🏫 ศูนย์ข้อมูลโรงเรียน")
+    st.markdown("<small style='color:#94a3b8;'>ระบบบัญชีสถานศึกษา</small>", unsafe_allow_html=True)
+    st.divider()
     
-    st.subheader("1. การชำระเงินโอน (ออนไลน์)")
+    st.markdown("#### ⚙️ นำเข้าข้อมูลรับชำระ")
+    
+    # ส่วน Google Form
     gsheet_url = "https://docs.google.com/spreadsheets/d/153j9DQjxc4ucll6myNsQNMN-rQuK9DxChft0Vh69LFU/edit?usp=sharing"
-    use_gsheet = st.checkbox("✅ เชื่อมต่อข้อมูลอัตโนมัติจาก Google Form", value=True)
+    use_gsheet = st.checkbox("🌐 ดึงข้อมูลจาก Google Form (โอนเงิน)", value=True)
+    
+    # ส่วน CSV Express
+    st.markdown(" ")
+    uploaded_files = st.file_uploader("📂 อัปโหลดรายงาน CSV (เงินสด/เช็ค)", type=['csv'], accept_multiple_files=True)
     
     st.divider()
-    
-    st.subheader("2. การชำระเงินสด/เช็ค (Express)")
-    uploaded_files = st.file_uploader("📂 อัปโหลดไฟล์รายงาน CSV", type=['csv'], accept_multiple_files=True)
-    
-    st.divider()
-    
     process_btn = st.button("🚀 ประมวลผลข้อมูล", use_container_width=True, type="primary")
 
-# --- โลจิกประมวลผล ---
+
+# ==========================================
+# โลจิกประมวลผล (เมื่อกดปุ่ม)
+# ==========================================
 if process_btn:
     with st.spinner('กำลังประมวลผลข้อมูล...'):
         csv_data = []
@@ -472,16 +466,12 @@ if process_btn:
             csv_dict[cname] = r
             
         all_data = []
-        
         if use_gsheet and gsheet_url:
             gsheet_data = pull_google_sheet_data(gsheet_url)
-            
             for g in gsheet_data:
                 cname = clean_name_th(g['ชื่อ-นามสกุล'])
-                
                 if cname in csv_dict:
                     csv_record = csv_dict[cname]
-                    
                     g['รหัสนักเรียน'] = csv_record['รหัสนักเรียน']
                     g['ยอดค้างเดิม (บาท)'] = csv_record['ยอดค้างเดิม (บาท)']
                     
@@ -490,154 +480,172 @@ if process_btn:
                     if g['พนักงานขาย (ระดับชั้นย่อย)'] == 'ไม่ระบุ': g['พนักงานขาย (ระดับชั้นย่อย)'] = csv_record['พนักงานขาย (ระดับชั้นย่อย)']
                     
                     g['ยอดคงเหลือล่าสุด (บาท)'] = g['ยอดค้างเดิม (บาท)'] - g['ยอดที่จ่าย (บาท)']
-                    
                     if csv_record['รายการบิล']:
                         g['รายการบิล'][0]['doc_no'] = csv_record['รายการบิล'][0]['doc_no']
                         g['รายการบิล'][0]['remain'] = g['ยอดคงเหลือล่าสุด (บาท)']
                     else:
                         g['รายการบิล'][0]['doc_no'] = csv_record['เอกสารอ้างอิง']
-                    
                     del csv_dict[cname]
-                
                 all_data.append(g)
                 
         all_data.extend(list(csv_dict.values()))
         st.session_state['processed_data'] = all_data
 
 # ==========================================
-# แสดงผลข้อมูลส่วนหลัก (Main Area)
+# Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
+
+# จำลอง Breadcrumb และส่วนหัวให้เหมือนต้นแบบ
+st.markdown("##### 🏠 ระบบบัญชีสถานศึกษา > ทะเบียนรับเงิน")
+st.markdown(f"**ระบบควบคุมการรับ-จ่ายสถานศึกษา** • ยอด ณ วันที่ {datetime.datetime.now().strftime('%d/%m/%Y')}")
+st.markdown("<br>", unsafe_allow_html=True)
+
 if not st.session_state['processed_data']:
-    st.info("👈 กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม **'ประมวลผลข้อมูล'** เพื่อเริ่มต้นใช้งานระบบ")
+    st.info("👈 กรุณานำเข้าข้อมูลที่เมนูด้านซ้าย และกดปุ่ม **'ประมวลผลข้อมูล'**")
 else:
     df = pd.DataFrame(st.session_state['processed_data'])
     df_paid = df[df['ยอดที่จ่าย (บาท)'] > 0].copy()
     
-    # แบ่งเป็น 2 แท็บ
-    tab1, tab2 = st.tabs(["📄 สรุปยอดและใบเสร็จ", "📈 แดชบอร์ด (Dashboard)"])
+    # คำนวณ KPI
+    total_revenue = df_paid['ยอดที่จ่าย (บาท)'].sum()
+    total_students_paid = len(df_paid)
+    online_count = len(df_paid[df_paid['source'] == 'online'])
+    express_count = len(df_paid[df_paid['source'] == 'express'])
     
-    # --- Tab 1: ตารางสรุปและดาวน์โหลดใบเสร็จ ---
-    with tab1:
-        st.success(f"พบนักเรียนที่ชำระเงินแล้วจำนวน **{len(df_paid)}** รายการ จากข้อมูลทั้งหมด {len(df)} รายการ")
+    # แสดงการ์ด KPI 4 ใบเรียงกัน (เหมือนภาพต้นแบบ)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f"""
+        <div class="kpi-card green">
+            <div class="kpi-title">💵 ยอดรับชำระรวมทั้งหมด</div>
+            <div class="kpi-value">{total_revenue:,.2f} <span class="kpi-unit">บาท</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-title">👥 นักเรียนที่ชำระแล้ว</div>
+            <div class="kpi-value">{total_students_paid} <span class="kpi-unit">คน</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown(f"""
+        <div class="kpi-card purple">
+            <div class="kpi-title">📱 โอนผ่านออนไลน์ (Form)</div>
+            <div class="kpi-value">{online_count} <span class="kpi-unit">รายการ</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="kpi-card orange">
+            <div class="kpi-title">🏫 เงินสด/เช็ค (Express)</div>
+            <div class="kpi-value">{express_count} <span class="kpi-unit">รายการ</span></div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'เพศ', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดค้างเดิม (บาท)', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # แบ่ง Tabs (ภาพรวม / ทะเบียน)
+    tab_dashboard, tab_table = st.tabs(["📊 ภาพรวม (Dashboard)", "📄 ทะเบียนรับเงิน (ออกใบเสร็จ)"])
+    
+    # ------------------ TAB: Dashboard ------------------
+    with tab_dashboard:
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        filter_col1, filter_col2, chart_type_col = st.columns(3)
+        gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
+        selected_gender = filter_col1.selectbox("คัดกรองเพศ:", gender_list)
+        
+        grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
+        selected_grade = filter_col2.selectbox("คัดกรองระดับชั้น:", grade_list)
+        
+        view_type = chart_type_col.selectbox(
+            "มุมมองกราฟ:",
+            ["กลุ่มช่วงชั้น (อนุบาล/ประถม)", "ระดับชั้นย่อย (อ.1 - ป.6)", "เพศ (ชาย/หญิง)"]
+        )
+        
+        df_filtered = df_paid.copy()
+        if selected_gender != 'ทั้งหมด': df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
+        if selected_grade != 'ทั้งหมด': df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
+            
+        st.divider()
+        chart_col, table_col = st.columns([1.2, 1])
+        
+        with chart_col:
+            st.markdown("##### 📈 กราฟสรุปยอดชำระเงิน")
+            if len(df_filtered) > 0:
+                if "กลุ่มช่วงชั้น" in view_type:
+                    summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
+                elif "ระดับชั้นย่อย" in view_type:
+                    summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
+                elif "เพศ" in view_type:
+                    summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
+                    st.bar_chart(summary.set_index('เพศ'))
+            else:
+                st.warning("ไม่มีข้อมูลกราฟตรงกับเงื่อนไขที่เลือก")
+                
+        with table_col:
+            st.markdown("##### 📋 รายชื่อนักเรียน (ตามการกรอง)")
+            if len(df_filtered) > 0:
+                cols_to_show = ['ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'ยอดที่จ่าย (บาท)']
+                st.dataframe(df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), use_container_width=True, height=350)
+            else:
+                st.warning("ไม่มีข้อมูลนักเรียนตรงกับเงื่อนไข")
+
+    # ------------------ TAB: Table & Print ------------------
+    with tab_table:
+        st.markdown("<br>", unsafe_allow_html=True)
+        display_cols = ['รหัสนักเรียน', 'ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'วันที่จ่ายเงิน', 'เลขที่ใบเสร็จ', 'ยอดที่จ่าย (บาท)', 'ยอดคงเหลือล่าสุด (บาท)']
         df_display = df[display_cols]
         
-        # จัดเรียงปุ่มดาวน์โหลดไว้บรรทัดเดียวกัน
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
+        act_col1, act_col2 = st.columns(2)
+        with act_col1:
             output_excel = io.BytesIO()
             with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-                df_display.to_excel(writer, index=False, sheet_name='รายงานสรุปยอด')
+                df_display.to_excel(writer, index=False, sheet_name='รายงานรับชำระ')
             st.download_button(
-                label="📥 1. ดาวน์โหลดตารางรวม (Excel)", 
+                label="📥 ดาวน์โหลดตารางรวม (Excel)", 
                 data=output_excel.getvalue(), 
                 file_name=f"รายงานค่าเทอม_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx", 
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
             
-        with col_dl2:
+        with act_col2:
             if not df_paid.empty:
                 if not has_font:
-                    st.warning("⚠️ ไม่พบไฟล์ฟอนต์ THSarabunNew.ttf ในระบบ")
+                    st.warning("⚠️ ไม่พบฟอนต์ THSarabunNew.ttf")
                 else:
                     pdf_packet = create_receipts_pdf(df_paid)
                     st.download_button(
-                        label=f"🖨️ 2. พิมพ์ใบเสร็จ {len(df_paid)} ใบ (PDF)", 
+                        label=f"🖨️ พิมพ์ใบเสร็จทั้งหมด ({len(df_paid)} ใบ)", 
                         data=pdf_packet, 
                         file_name=f"ใบเสร็จรับเงิน_{datetime.datetime.now().strftime('%Y%m%d')}.pdf", 
                         mime="application/pdf",
-                        use_container_width=True
+                        use_container_width=True,
+                        type="primary"
                     )
         
         st.markdown("<br>", unsafe_allow_html=True)
-        
-        # ตารางแสดงข้อมูล
         def highlight_paid(row):
             colors = [''] * len(row)
-            paid = row['ยอดที่จ่าย (บาท)']
-            if paid > 0:
+            if row['ยอดที่จ่าย (บาท)'] > 0:
                 idx_paid = df_display.columns.get_loc('ยอดที่จ่าย (บาท)')
-                colors[idx_paid] = 'background-color: #d4edda; color: #155724;'
+                colors[idx_paid] = 'background-color: #d4edda; color: #155724; font-weight: bold;'
             return colors
             
         styled_df = df_display.style.apply(highlight_paid, axis=1).format({
-            'ยอดค้างเดิม (บาท)': '{:,.2f}', 
             'ยอดที่จ่าย (บาท)': '{:,.2f}', 
             'ยอดคงเหลือล่าสุด (บาท)': '{:,.2f}'
         })
+        
+        # ปรับสีกรอบตารางให้กลืนกับ UI ใหม่
+        st.markdown("""
+        <style>
+            [data-testid="stDataFrame"] { border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        </style>
+        """, unsafe_allow_html=True)
+        
         st.dataframe(styled_df, use_container_width=True, height=500)
-
-    # --- Tab 2: Dashboard ---
-    with tab2:
-        if df_paid.empty:
-            st.info("ยังไม่มีข้อมูลการชำระเงินในระบบ")
-        else:
-            # กล่องตัวกรองข้อมูล
-            with st.container():
-                st.markdown("#### 🔍 คัดกรองข้อมูล (Filters)")
-                fcol1, fcol2 = st.columns(2)
-                
-                gender_list = ['ทั้งหมด'] + sorted(list(df_paid['เพศ'].unique()))
-                selected_gender = fcol1.selectbox("เลือกเพศ:", gender_list)
-                
-                grade_list = ['ทั้งหมด'] + sorted(list(df_paid['พนักงานขาย (ระดับชั้นย่อย)'].unique()))
-                selected_grade = fcol2.selectbox("เลือกระดับชั้น:", grade_list)
-            
-            # การประมวลผลตัวกรอง
-            df_filtered = df_paid.copy()
-            if selected_gender != 'ทั้งหมด':
-                df_filtered = df_filtered[df_filtered['เพศ'] == selected_gender]
-            if selected_grade != 'ทั้งหมด':
-                df_filtered = df_filtered[df_filtered['พนักงานขาย (ระดับชั้นย่อย)'] == selected_grade]
-                
-            total_amt = df_filtered['ยอดที่จ่าย (บาท)'].sum()
-            total_ppl = len(df_filtered)
-            
-            st.divider()
-            
-            # กล่องแสดงตัวเลขสรุป
-            mcol1, mcol2 = st.columns(2)
-            mcol1.metric("👥 จำนวนนักเรียนที่ชำระแล้ว (ตามเงื่อนไข)", f"{total_ppl} คน")
-            mcol2.metric("💰 ยอดรับชำระรวม (ตามเงื่อนไข)", f"{total_amt:,.2f} บาท")
-            
-            st.divider()
-            
-            # แบ่งครึ่งจอกราฟและตาราง
-            chart_col, table_col = st.columns([1, 1])
-            
-            with chart_col:
-                st.markdown("#### 📊 กราฟสรุปยอดภาพรวม")
-                view_type = st.selectbox(
-                    "เลือกมุมมองกราฟ:",
-                    ["🏫 สรุปตามกลุ่มช่วงชั้น (อนุบาล/ประถม)", 
-                     "📚 สรุปตามระดับชั้นย่อย (อ.1 - ป.6)", 
-                     "👦👧 สรุปตามเพศ (ชาย/หญิง)"],
-                    label_visibility="collapsed"
-                )
-                
-                if len(df_filtered) > 0:
-                    if "กลุ่มช่วงชั้น" in view_type:
-                        summary = df_filtered.groupby('กลุ่มช่วงชั้น')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                        st.bar_chart(summary.set_index('กลุ่มช่วงชั้น'))
-                        
-                    elif "ระดับชั้นย่อย" in view_type:
-                        summary = df_filtered.groupby('พนักงานขาย (ระดับชั้นย่อย)')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                        st.bar_chart(summary.set_index('พนักงานขาย (ระดับชั้นย่อย)'))
-                        
-                    elif "เพศ" in view_type:
-                        summary = df_filtered.groupby('เพศ')['ยอดที่จ่าย (บาท)'].sum().reset_index()
-                        st.bar_chart(summary.set_index('เพศ'))
-            
-            with table_col:
-                st.markdown("#### 📋 รายชื่อนักเรียน (ตามเงื่อนไขที่เลือก)")
-                if len(df_filtered) > 0:
-                    cols_to_show = ['ชื่อ-นามสกุล', 'พนักงานขาย (ระดับชั้นย่อย)', 'ยอดที่จ่าย (บาท)']
-                    st.dataframe(
-                        df_filtered[cols_to_show].style.format({'ยอดที่จ่าย (บาท)': '{:,.2f}'}), 
-                        use_container_width=True,
-                        height=350
-                    )
-                else:
-                    st.warning("ไม่มีข้อมูลนักเรียนที่ตรงกับเงื่อนไขที่เลือก")
