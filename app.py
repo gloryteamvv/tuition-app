@@ -37,11 +37,11 @@ st.markdown("""
         background-color: #B8e7ca; 
     }
     [data-testid="stSidebar"] * {
-        color: #185f93 !important; 
+        color: #185f93 !important; /* สีตัวอักษร #185f93 (8%) */
         font-size: 14px;
     }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
-        color: #009460 !important; 
+        color: #009460 !important; /* สี #009460 (25%) */
     }
     [data-testid="stSidebar"] button * {
         font-size: 16px !important;
@@ -54,7 +54,7 @@ st.markdown("""
         color: white !important;
     }
     button[kind="primary"]:hover {
-        background-color: #ff8d6d !important; 
+        background-color: #ff8d6d !important; /* Hover สี #ff8d6d (8%) */
         border-color: #ff8d6d !important;
     }
     
@@ -77,7 +77,6 @@ st.markdown("""
     .stApp {
         background-color: #fafafa;
     }
-    header {visibility: hidden;}
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
@@ -89,25 +88,25 @@ st.markdown("""
         border-left: 5px solid #009460; 
         margin-bottom: 15px;
     }
-    .kpi-card.green { border-left-color: #009460; } 
-    .kpi-card.yellow { border-left-color: #f5e0a4; } 
-    .kpi-card.pink { border-left-color: #ff6e8a; } 
-    .kpi-card.orange { border-left-color: #ff8d6d; } 
+    .kpi-card.green { border-left-color: #009460; } /* #009460 */
+    .kpi-card.yellow { border-left-color: #f5e0a4; } /* #f5e0a4 */
+    .kpi-card.pink { border-left-color: #ff6e8a; } /* #ff6e8a */
+    .kpi-card.orange { border-left-color: #ff8d6d; } /* #ff8d6d */
     
     .kpi-title {
         font-size: 13px;
-        color: #185f93; 
+        color: #185f93; /* #185f93 */
         margin-bottom: 5px;
         font-weight: 600;
     }
     .kpi-value {
         font-size: 24px; 
         font-weight: bold;
-        color: #009460; 
+        color: #009460; /* #009460 */
     }
     .kpi-unit {
         font-size: 13px;
-        color: #ff6e8a; 
+        color: #ff6e8a; /* #ff6e8a */
         font-weight: normal;
     }
     
@@ -131,7 +130,7 @@ st.markdown("""
         border-bottom: none;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #ff6e8a !important; 
+        background-color: #ff6e8a !important; /* แท็บ Active สี #ff6e8a */
         color: white !important;
     }
 </style>
