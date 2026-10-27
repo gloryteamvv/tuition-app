@@ -16,13 +16,12 @@ from reportlab.lib import colors
 from bahttext import bahttext
 
 # ==========================================
-# ตั้งค่าหน้าเพจแบบ Wide และธีม
+# ตั้งค่าหน้าเพจแบบ Wide 
 # ==========================================
 st.set_page_config(page_title="Vieng Center - สรุปยอดค่าเทอม", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# Custom CSS ปรับแต่ง UI ตามชุดสีที่กำหนด
-# #009460 25%, #ff6e8a 25%, #B8e7ca 17%, #f5e0a4 16%, #ff8d6d 8%, #185f93 8%
+# Custom CSS ปรับแต่ง UI ตามชุดสีที่กำหนด และเปลี่ยนปุ่มเป็นขีด 3 ขีด
 # ==========================================
 st.markdown("""
 <style>
@@ -38,11 +37,27 @@ st.markdown("""
         background-color: #B8e7ca; 
     }
     [data-testid="stSidebar"] * {
-        color: #185f93 !important;
+        color: #185f93 !important; 
         font-size: 14px;
     }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
         color: #009460 !important; 
+    }
+    [data-testid="stSidebar"] button * {
+        font-size: 16px !important;
+        font-weight: bold;
+    }
+    
+    /* ปุ่ม Primary */
+    button[kind="primary"] {
+        background-color: #ff6e8a !important;
+        border-color: #ff6e8a !important;
+        color: #185f93 !important; 
+    }
+    button[kind="primary"]:hover {
+        background-color: #ff8d6d !important; 
+        border-color: #ff8d6d !important;
+        color: white !important;
     }
     
     /* ปรับแต่งสีป้ายตัวเลือก (Multiselect Tags) */
@@ -64,7 +79,35 @@ st.markdown("""
     .stApp {
         background-color: #fafafa;
     }
-    header {visibility: hidden;}
+    
+    /* ==============================================================
+       ตั้งค่าปุ่มแถบเมนู (Hamburger Menu) เป็นขีด 3 ขีด 
+       ============================================================== */
+    /* ทำให้ Header โปร่งใส ไม่บังเนื้อหาแต่ปุ่มยังกดได้ */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    
+    /* ซ่อนปุ่มจุด 3 จุด มุมขวาบน */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
+    }
+    
+    /* ซ่อนไอคอนลูกศรเดิมตอนย่อแถบ */
+    button[data-testid="collapsedControl"] svg {
+        display: none !important;
+    }
+    
+    /* ใส่ไอคอนขีด 3 ขีด (Hamburger) สีชมพูแทนที่ */
+    button[data-testid="collapsedControl"]::before {
+        content: "☰";
+        font-size: 28px;
+        color: #ff6e8a; 
+        font-weight: bold;
+    }
+    button[data-testid="collapsedControl"]:hover::before {
+        color: #ff8d6d;
+    }
     
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
@@ -120,17 +163,6 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         background-color: #ff6e8a !important; 
         color: #185f93 !important; 
-    }
-    /* ปรับปุ่มดาวน์โหลดให้เข้าธีม */
-    button[kind="primary"] {
-        background-color: #ff6e8a !important;
-        border-color: #ff6e8a !important;
-        color: #185f93 !important; 
-    }
-    button[kind="primary"]:hover {
-        background-color: #ff8d6d !important;
-        border-color: #ff8d6d !important;
-        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -329,7 +361,7 @@ def create_receipts_pdf(df_paid):
     return packet
 
 
-# --- ฟังก์ชันดึงข้อมูลจาก Google Sheet (แคชไว้ 60 วินาที) ---
+# --- ฟังก์ชันดึงข้อมูลจาก Google Sheet ---
 @st.cache_data(ttl=60)
 def pull_google_sheet_data(sheet_url):
     results = []
@@ -465,9 +497,6 @@ if 'processed_data' not in st.session_state:
 logo_path = "logo.png"
 
 with st.sidebar:
-    # ----------------------------------------
-    # แสดงโลโก้ Vieng Center
-    # ----------------------------------------
     if os.path.exists(logo_path):
         logo_b64 = get_image_base64(logo_path)
         st.markdown(f"<div style='text-align: center;'><img src='data:image/png;base64,{logo_b64}' width='130'></div>", unsafe_allow_html=True)
@@ -534,9 +563,6 @@ else:
 # Layout : Main Area (พื้นที่ตรงกลาง)
 # ==========================================
 
-# ----------------------------------------
-# แสดงโลโก้ขนาดเล็กในหัวข้อ
-# ----------------------------------------
 if os.path.exists(logo_path):
     logo_b64 = get_image_base64(logo_path)
     st.markdown(f"##### <img src='data:image/png;base64,{logo_b64}' width='24' style='vertical-align: middle; margin-right: 8px;'> <span style='vertical-align: middle;'>Vieng Center > ทะเบียนรับเงิน</span>", unsafe_allow_html=True)
