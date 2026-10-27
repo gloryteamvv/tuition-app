@@ -81,42 +81,38 @@ st.markdown("""
     }
     
     /* ==============================================================
-       ตั้งค่าปุ่มแถบเมนู (Hamburger Menu) ให้แสดงผลและใช้งานได้จริง
+       แก้ไขปัญหาปุ่มเปิดเมนูด้านซ้ายอย่างตรงจุด
        ============================================================== */
-    /* ทำให้แถบด้านบนโปร่งใส */
+    /* 1. ทำให้ Header พื้นหลังโปร่งใส ไม่บังเนื้อหา */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
     }
     
-    /* ซ่อนเมนูจุด 3 จุดขวาบน */
-    [data-testid="stActionElements"], [data-testid="stToolbar"] {
+    /* 2. ซ่อนเมนูจุด 3 จุดขวาบน */
+    [data-testid="stToolbar"] {
         display: none !important;
     }
     
-    /* ซ่อนไอคอนลูกศรเดิม และกำหนดให้แสดงเป็นปุ่มขีด 3 ขีด ☰ แทน */
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 45px !important;
-        height: 45px !important;
-        border-radius: 8px !important;
-        margin-top: 5px !important;
-        margin-left: 5px !important;
-    }
+    /* 3. ซ่อนไอคอนลูกศรเดิมโดยใช้ opacity (เพื่อรักษาขนาดของปุ่มไว้ ไม่ให้ยุบเหลือ 0 พิกเซล) */
     [data-testid="collapsedControl"] svg {
-        display: none !important;
-    }
-    [data-testid="collapsedControl"]::after {
-        content: "☰" !important;
-        font-size: 30px !important;
-        color: #ff6e8a !important;
-        font-weight: bold !important;
-    }
-    [data-testid="collapsedControl"]:hover::after {
-        color: #ff8d6d !important;
+        opacity: 0 !important; 
     }
     
+    /* 4. แทรกไอคอนขีด 3 ขีด (Hamburger Menu) สีชมพูเข้าไปเป็นพื้นหลังแทน */
+    [data-testid="collapsedControl"] {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff6e8a'%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E") !important;
+        background-size: 26px !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        transition: 0.2s !important;
+    }
+    
+    /* 5. เปลี่ยนเป็นสีส้มพาสเทลเมื่อเอาเมาส์ชี้ (Hover) */
+    [data-testid="collapsedControl"]:hover {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff8d6d'%3E%3Cpath d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/%3E%3C/svg%3E") !important;
+    }
+    /* ============================================================== */
+
     /* สไตล์การ์ดตัวเลขสรุปยอด (KPI) */
     .kpi-card {
         background-color: white;
